@@ -1,0 +1,12 @@
+{
+  "name": "gidget-solution",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+      "start": "node build & nodemon ./examples/node-web/bin/www"
+  },
+  "dependencies": {
+      "fs-extra": "0.14.x",
+      "uglify-js": "2.4.x"
+  }
+}
