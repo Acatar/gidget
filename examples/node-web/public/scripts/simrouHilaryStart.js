@@ -1,14 +1,14 @@
-/*globals hilary, jQuery, Sammy, gidget, console*/
-hilary.run([jQuery, Sammy, gidget], function (ctx, $, Sammy, gidgetComposer) {
+/*globals hilary, jQuery, Simrou, gidget, console*/
+hilary.run([jQuery, Simrou, gidget], function (ctx, $, Simrou, gidgetComposer) {
     "use strict";
-    var sammy,
+    var simrou,
         gidget,
-        homeController = hilary.resolve('home_controller'),
-        breweriesController = hilary.resolve('breweries_controller');
+        homeController = hilary.resolve('controllers::home'),
+        breweriesController = hilary.resolve('controllers::breweries');
 
-    sammy = new Sammy('#main', function () {});
-    gidgetComposer.compose(sammy, {
-        // useGidgetRouting: true
+    simrou = new Simrou();
+    gidgetComposer.compose(simrou, {
+        useGidgetRouting: false
     }, function (gidgetModules) {
         gidget = gidgetModules;
     });

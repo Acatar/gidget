@@ -6,7 +6,7 @@
     var fs = require('fs-extra'),
         uglify = require('uglify-js'),
         jsDir = "src/",
-        jsFiles = ["gidget", "sammyBootstrapper"],
+        jsFiles = ["gidget", "sammyBootstrapper", "simrouBootstrapper"],
         jsFilesCount = jsFiles.length,
         ensureFileErr,
         keepGoing = true,
@@ -16,7 +16,7 @@
         if (err) {
             keepGoing = false;
             console.log(err);
-        }         
+        }
     };
     
     for (i = 0; i < jsFilesCount; i++) {

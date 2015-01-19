@@ -1,4 +1,4 @@
-/*jslint plusplus: true*/
+/*jslint plusplus: true, regexp: true*/
 /*globals exports*/
 (function (exports) {
     "use strict";
@@ -58,7 +58,7 @@
         this.put = router.put;
         this.del = router.del;
         this.any = router.any;
-        this.listen = router.listen;
+        this.start = router.start;
         this.navigate = router.navigate;
         this.pipelineRegistries = pipelineRegistries;
         
@@ -86,7 +86,7 @@
             }
         };
         
-        // thanks Simrau!
+        // thanks Simrou!
         this.parseRoute = function (pattern, caseSensitive) {
             var flags,
                 name,
@@ -125,6 +125,10 @@
                 params: params,
                 pattern: pattern
             };
+        };
+        
+        this.getHash = function () {
+            return String(location.hash).replace(regularExpressions.extractHash, '$1');
         };
         
         this.executePipeline = function (pipelineToExecute, verb, path, params, event) {

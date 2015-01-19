@@ -1,5 +1,5 @@
 /*globals define*/
-define('require_sammy_controllers/home', { init: function (GidgetModule, $) {
+define('sammy_require_controllers/home', { init: function (GidgetModule, $) {
     "use strict";
     
     var $this = new GidgetModule();

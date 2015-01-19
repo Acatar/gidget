@@ -1,6 +1,6 @@
 /*jslint plusplus: true*/
-/*globals hilary, console*/
-hilary.register('breweries_controller', { init: function (GidgetModule, $) {
+/*globals define, console*/
+define('sammy_require_controllers/breweries', { init: function (GidgetModule, $) {
     "use strict";
     
     var $this = new GidgetModule(),
@@ -26,11 +26,11 @@ hilary.register('breweries_controller', { init: function (GidgetModule, $) {
         return html;
     };
     
-    $this.get['/sammy_hilary/#/breweries/:id'] = function (params) {
+    $this.get['/require_sammy/#/breweries/:id'] = function (params) {
         $('#main').html('<h1>/sammy/#/breweries/:id</h1>' + paramsToHtml(params));
     };
     
-    $this.get['/sammy_hilary/#/breweries/:id/beers/:beerId'] = function (params) {
+    $this.get['/require_sammy/#/breweries/:id/beers/:beerId'] = function (params) {
         $('#main').html('<h1>/sammy/#/breweries/:id/beers/:beerId</h1>' + paramsToHtml(params));
     };
     
