@@ -58,7 +58,7 @@
         this.put = router.put;
         this.del = router.del;
         this.any = router.any;
-        this.listen = router.listen;
+        this.start = router.start;
         this.navigate = router.navigate;
         this.pipelineRegistries = pipelineRegistries;
         
@@ -86,7 +86,7 @@
             }
         };
         
-        // thanks Simrau!
+        // thanks Simrou!
         this.parseRoute = function (pattern, caseSensitive) {
             var flags,
                 name,

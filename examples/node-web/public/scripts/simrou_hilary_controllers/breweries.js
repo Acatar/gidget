@@ -1,6 +1,6 @@
 /*jslint plusplus: true*/
-/*globals define, console*/
-define('require_sammy_controllers/breweries', { init: function (GidgetModule, $) {
+/*globals hilary, console*/
+hilary.register('controllers::breweries', { init: function (GidgetModule, $) {
     "use strict";
     
     var $this = new GidgetModule(),
@@ -26,12 +26,12 @@ define('require_sammy_controllers/breweries', { init: function (GidgetModule, $)
         return html;
     };
     
-    $this.get['/require_sammy/#/breweries/:id'] = function (params) {
-        $('#main').html('<h1>/sammy/#/breweries/:id</h1>' + paramsToHtml(params));
+    $this.get['/simrou_hilary/#/breweries/:id'] = function (params) {
+        $('#main').html('<h1>/simrou_hilary/#/breweries/:id</h1>' + paramsToHtml(params));
     };
     
-    $this.get['/require_sammy/#/breweries/:id/beers/:beerId'] = function (params) {
-        $('#main').html('<h1>/sammy/#/breweries/:id/beers/:beerId</h1>' + paramsToHtml(params));
+    $this.get['/simrou_hilary/#/breweries/:id/beers/:beerId'] = function (params) {
+        $('#main').html('<h1>/simrou_hilary/#/breweries/:id/beers/:beerId</h1>' + paramsToHtml(params));
     };
     
     return $this;

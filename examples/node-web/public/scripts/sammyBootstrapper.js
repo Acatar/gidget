@@ -1,4 +1,4 @@
-/*jslint nomen: true, plusplus: true, regexp: true*/
+/*jslint plusplus: true*/
 /*globals exports, jQuery, Gidget, Sammy*/
 
 (function (exports, Gidget) {
@@ -18,7 +18,7 @@
         addNewRoute = function (verb, path, callback) {
             var eventedCallback;
             
-            if (!config.useSammyRouting) {
+            if (config.useGidgetRouting) {
                 path = router.parseRoute(path).expression;
             }
             
@@ -56,18 +56,21 @@
             any: function (path, callback) {
                 return addNewRoute('any', path, callback);
             },
-            listen: function () {
+            start: function () {
                 sammy.run();
             },
-            navigate: function (hash) {
-                var previousHash = getHash();
-                location.hash = hash;
+            navigate: function (hash, updateUrlBar) {
+                if (updateUrlBar === undefined) {
+                    updateUrlBar = true;
+                }
+                
+                if (updateUrlBar) {
+                    location.hash = hash;
+                } else {
+                    throw new Error('Navigating without updating the URL bar is not implemented');
+                }
             }
         });
-
-        getHash = function () {
-            return String(location.hash).replace(regularExpressions.extractHash, '$1');
-        };
         
         return router;
     };
@@ -85,6 +88,8 @@
             var optArgIsCallback = typeof options === 'function',
                 opts = optArgIsCallback ? {} : options,
                 cb = optArgIsCallback ? options : callback;
+            
+            opts.useGidgetRouting = opts.useGidgetRouting === undefined ? true : opts.useGidgetRouting;
             
             return gidget.compose(sammyRouter(sammyInstance, opts), cb);
         }

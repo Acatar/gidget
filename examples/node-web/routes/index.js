@@ -14,4 +14,8 @@ router.get('/sammy_hilary', function(req, res) {
   res.render('sammy_hilary', { title: 'gidget with the Sammy Bootstrapper and hilary' });
 });
 
+router.get('/simrou_hilary', function(req, res) {
+  res.render('simrou_hilary', { title: 'gidget with the Simrau Bootstrapper and hilary' });
+});
+
 module.exports = router;

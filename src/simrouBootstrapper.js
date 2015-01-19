@@ -19,7 +19,17 @@
             var eventedCallback,
                 route;
             
-            if (!config.useSimrauRouting) {
+            if (typeof path === 'string') {
+                if (path.substr(0, 1) === '#') {
+                    path = path.substr(1, path.length);
+                }
+                
+                if (path.substr(0, 2) === '/#') {
+                    path = path.substr(2, path.length);
+                }
+            }
+            
+            if (config.useGidgetRouting) {
                 path = router.parseRoute(path).expression;
             }
             
@@ -55,7 +65,7 @@
                 break;
             case 'any':
                 route.any(eventedCallback);
-                break;                    
+                break;
             }
         };
 
@@ -75,7 +85,7 @@
             any: function (path, callback) {
                 return addNewRoute('any', path, callback);
             },
-            listen: function () {
+            start: function () {
                 routeEngine.start();
             },
             navigate: function (hash, updateUrlBar) {
@@ -87,7 +97,7 @@
                     routeEngine.navigate(hash);
                 } else {
                     routeEngine.resolve(hash);
-                }                
+                }
                 
             }
         });
@@ -112,6 +122,8 @@
             var optArgIsCallback = typeof options === 'function',
                 opts = optArgIsCallback ? {} : options,
                 cb = optArgIsCallback ? options : callback;
+            
+            opts.useGidgetRouting = opts.useGidgetRouting === undefined ? true : opts.useGidgetRouting;
             
             return gidget.compose(simrauRouter(simrauInstance, opts), cb);
         }

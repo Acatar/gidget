@@ -15,7 +15,7 @@ define('gidget', function () {
     return window.gidget;
 });
 
-require(['jquery', 'sammy', 'gidget', 'require_sammy_controllers/home', 'require_sammy_controllers/breweries'],
+require(['jquery', 'sammy', 'gidget', 'sammy_require_controllers/home', 'sammy_require_controllers/breweries'],
     function ($, Sammy, gidgetComposer, homeController, breweriesController) {
         "use strict";
 
@@ -24,7 +24,7 @@ require(['jquery', 'sammy', 'gidget', 'require_sammy_controllers/home', 'require
 
         sammy = new Sammy('#main', function () {});
         gidgetComposer.compose(sammy, {
-            // useSammyRouting: true
+            // useGidgetRouting: true
         }, function (gidgetModules) {
             gidget = gidgetModules;
         });
@@ -40,5 +40,5 @@ require(['jquery', 'sammy', 'gidget', 'require_sammy_controllers/home', 'require
             console.log('finished navigating to:', { verb: verb, path: path, params: params });
         });
 
-        gidget.GidgetRouteEngine.listen();
+        gidget.GidgetRouteEngine.start();
     });

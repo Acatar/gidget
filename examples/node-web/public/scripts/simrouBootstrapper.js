@@ -1,13 +1,13 @@
-/*jslint plusplus: true*/
-/*globals exports, jQuery, Gidget, Sammy*/
+/*jslint nomen: true, plusplus: true, regexp: true*/
+/*globals exports, jQuery, Gidget, Simrau*/
 
 (function (exports, Gidget) {
     "use strict";
     
     var gidget = new Gidget(),
-        sammyRouter;
+        simrauRouter;
     
-    sammyRouter = function (sammy, options) {
+    simrauRouter = function (routeEngine, options) {
         var router,
             addNewRoute,
             getHash,
@@ -16,28 +16,57 @@
             config = options || {};
 
         addNewRoute = function (verb, path, callback) {
-            var eventedCallback;
+            var eventedCallback,
+                route;
+            
+            if (typeof path === 'string') {
+                if (path.substr(0, 1) === '#') {
+                    path = path.substr(1, path.length);
+                }
+                
+                if (path.substr(0, 2) === '/#') {
+                    path = path.substr(2, path.length);
+                }
+            }
             
             if (config.useGidgetRouting) {
                 path = router.parseRoute(path).expression;
             }
             
-            eventedCallback = function (context) {
+            eventedCallback = function (event, params) {
                 if (router.pipelineRegistries.beforeRoute[path]) {
-                    router.pipelineRegistries.beforeRoute[path](verb, path, context.params);
+                    router.pipelineRegistries.beforeRoute[path](verb, path, params, event);
                 }
 
-                router.executePipeline(router.pipelineRegistries.before, verb, path, context.params);
-                callback(context.params);
+                router.executePipeline(router.pipelineRegistries.before, verb, path, params, event);
+                callback(params, event);
 
                 if (router.pipelineRegistries.afterRoute[path]) {
-                    router.pipelineRegistries.afterRoute[path](verb, path, context.params);
+                    router.pipelineRegistries.afterRoute[path](verb, path, params, event);
                 }
 
-                router.executePipeline(router.pipelineRegistries.after, verb, path, context.params);
+                router.executePipeline(router.pipelineRegistries.after, verb, path, params, event);
             };
-
-            sammy.route(verb, path, eventedCallback);
+            
+            route = routeEngine.addRoute(path);
+            
+            switch (verb) {
+            case 'get':
+                route.get(eventedCallback);
+                break;
+            case 'put':
+                route.put(eventedCallback);
+                break;
+            case 'post':
+                route.post(eventedCallback);
+                break;
+            case 'delete':
+                route['delete'](eventedCallback);
+                break;
+            case 'any':
+                route.any(eventedCallback);
+                break;
+            }
         };
 
         router = new gidget.RouteEngine({
@@ -57,7 +86,7 @@
                 return addNewRoute('any', path, callback);
             },
             start: function () {
-                sammy.run();
+                routeEngine.start();
             },
             navigate: function (hash, updateUrlBar) {
                 if (updateUrlBar === undefined) {
@@ -65,12 +94,17 @@
                 }
                 
                 if (updateUrlBar) {
-                    location.hash = hash;
+                    routeEngine.navigate(hash);
                 } else {
-                    throw new Error('Navigating without updating the URL bar is not implemented');
+                    routeEngine.resolve(hash);
                 }
+                
             }
         });
+
+        getHash = function () {
+            return String(location.hash).replace(regularExpressions.extractHash, '$1');
+        };
         
         return router;
     };
@@ -84,14 +118,14 @@
         //  Composes a gidget app. The callback gives you access to the bootstrapped 
         //  gidget modules
         */
-        compose: function (sammyInstance, options, callback) {
+        compose: function (simrauInstance, options, callback) {
             var optArgIsCallback = typeof options === 'function',
                 opts = optArgIsCallback ? {} : options,
                 cb = optArgIsCallback ? options : callback;
             
             opts.useGidgetRouting = opts.useGidgetRouting === undefined ? true : opts.useGidgetRouting;
             
-            return gidget.compose(sammyRouter(sammyInstance, opts), cb);
+            return gidget.compose(simrauRouter(simrauInstance, opts), cb);
         }
     };
     
