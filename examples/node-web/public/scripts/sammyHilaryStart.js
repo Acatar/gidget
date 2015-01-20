@@ -9,8 +9,8 @@ hilary.run([jQuery, Sammy, gidget], function (ctx, $, Sammy, gidgetComposer) {
     sammy = new Sammy('#main', function () {});
     gidgetComposer.compose(sammy, {
         // useGidgetRouting: true
-    }, function (gidgetModules) {
-        gidget = gidgetModules;
+    }, function (gidgetApp) {
+        gidget = gidgetApp;
     });
 
     gidget.registerModule(homeController.init(gidget.GidgetModule, $));

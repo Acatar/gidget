@@ -10,9 +10,6 @@
     simrauRouter = function (routeEngine, options) {
         var router,
             addNewRoute,
-            getHash,
-            regularExpressions,
-            parseRoute,
             config = options || {};
 
         addNewRoute = function (verb, path, callback) {
