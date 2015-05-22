@@ -1,0 +1,22 @@
+{
+    "name": "gidget-builder",
+    "version": "1.0.0",
+    "description": "An Inversion of Control Container for JavaScript",
+    "main": "build.js",
+    "scripts": {
+        "test": "test",
+        "build": "build.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Acatar/hilaryjs"
+    },
+    "dependencies": {
+        "grunt": "0.4.x",
+        "grunt-contrib-uglify": "0.7.x",
+        "grunt-mocha": "*",
+        "grunt-mocha-test": "*",
+        "grunt-contrib-watch": "0.6.x",
+        "grunt-contrib-copy": "0.4.x"
+    }
+}
