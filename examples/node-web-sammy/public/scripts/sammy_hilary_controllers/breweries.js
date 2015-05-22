@@ -5,8 +5,11 @@ Hilary.scope('node-web-sammy').register({
     factory: function (GidgetModule, $) {
         "use strict";
         
-        var $this = new GidgetModule(),
-            paramsToHtml;
+        var self = new GidgetModule(),
+            paramsToHtml,
+            logLifecycle,
+            breweriesHandler,
+            beersHandler;
 
         paramsToHtml = function (params) {
             var html = '',
@@ -27,15 +30,34 @@ Hilary.scope('node-web-sammy').register({
 
             return html;
         };
-
-        $this.get['/sammy_hilary/#/breweries/:id'] = function (params) {
+        
+        logLifecycle = function (message, verb, path, params) {
+            console.log(message, {
+                verb: verb,
+                path: path,
+                params: params
+            });
+        };
+        
+        breweriesHandler = function (params) {
             $('#main').html('<h1>/sammy_hilary/#/breweries/:id</h1>' + paramsToHtml(params));
         };
-
-        $this.get['/sammy_hilary/#/breweries/:id/beers/:beerId'] = function (params) {
+        
+        breweriesHandler.before = function (verb, path, params) {
+            logLifecycle('before breweries route', verb, path, params);
+        };
+        
+        breweriesHandler.after = function (verb, path, params) {
+            logLifecycle('after breweries route', verb, path, params);
+        };
+        
+        beersHandler = function (params) {
             $('#main').html('<h1>/sammy_hilary/#/breweries/:id/beers/:beerId</h1>' + paramsToHtml(params));
         };
 
-        return $this;
+        self.get['/sammy_hilary/#/breweries/:id'] = breweriesHandler;
+        self.get['/sammy_hilary/#/breweries/:id/beers/:beerId'] = beersHandler;
+
+        return self;
     }
 });
