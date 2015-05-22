@@ -2,9 +2,7 @@
 A Domain Service Language (DSL) for JavaScript SPAs and Node.js servers inspired by NancyFx and Sinatra
 
 ## Router Dependencies
-Gidget is not itself a route engine. It requires that you bootstrap it with one. At the moment,
-only sammy is supported, but bootrappers are simple to write, so it can be used with others, like
-simrou, or express.
+Gidget is not itself a route engine. It requires that you bootstrap it with one. At the moment, only sammy is supported, but bootrappers are simple to write, so it can be used with others, like simrou, or express.
 
 ## Getting Started with Gidget and Sammy
 First, install jQuery, sammy, hilary and gidget.
@@ -29,8 +27,7 @@ In your markup, add the following:
 <script type="text/javascript" src=".../gidget.bootstrappers.sammy.min.js"></script>
 ```
 
-We're going to follow the composition root pattern in standing up our route engine. If you're
-not familiar with that, check out http://blog.ploeh.dk/2011/07/28/CompositionRoot/.
+We're going to follow the composition root pattern in standing up our route engine. If you're not familiar with that, check out http://blog.ploeh.dk/2011/07/28/CompositionRoot/.
 
 First let's create a route module/controller:
 ```JavaScript
@@ -181,8 +178,7 @@ OK, now that we have some controllers, let's start the app:
 }(Hilary.scope('myWebApp'), jQuery, Sammy, Gidget));
 ```
 
-Great. Now let's take advantage of the application lifecycle. We're going to add before and
-after handlers to log our actions out to the console:
+Great. Now let's take advantage of the application lifecycle. We're going to add before and after handlers to log our actions out to the console:
 ```JavaScript
 configureApplicationLifecycle = function (pipelines) {
     pipelines.before(function (verb, path, params) {
