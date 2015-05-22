@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{title}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/scripts/lib/bower_components/bootstrap/dist/css/bootstrap.min.css">
+    
+    <script type="text/javascript" src="/scripts/lib/bower_components/jquery/dist/jquery.min.js"></script>
+    <script src="/scripts/lib/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">gidget.js</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">gidget+require+Sammy<span class="caret"></span></a>
+              <ul class="dropdown-menu require-sammy" role="menu">
+                  <li><a href="/require_sammy">About</a></li>
+              </ul>
+            </li>
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">gidget+hilary+Sammy<span class="caret"></span></a>
+              <ul class="dropdown-menu hilary-sammy" role="menu">
+                  <li><a href="/sammy_hilary">About</a></li>
+              </ul>
+            </li>
+<!--
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">gidget+hilary+Simrou<span class="caret"></span></a>
+              <ul class="dropdown-menu hilary-simrou" role="menu">
+                  <li><a href="/simrou_hilary">About</a></li>
+              </ul>
+            </li>
+-->
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+    </nav>
+    
+    <section id="main" class="container">
+        {{{body}}}
+    </section>
+    
+    <script id="menu-items" type="text/html">
+        <li><a href="/{0}/#/example1">example 1</a></li>
+        <li><a href="/{0}/#/example2">example 2</a></li>
+        <li class="divider"></li>
+        <li><a href="/{0}/#/breweries/straub">Straub Brewery</a></li>
+        <li><a href="/{0}/#/breweries/straub/beers/light">Straub Light</a></li>
+        <li><a href="/{0}/#/breweries/straub/beers/lager">Straub Lager</a></li>
+        <li><a href="/{0}/#/breweries/straub/beers/amber">Straub Amber</a></li>
+    </script>
+    <script src="/scripts/nav.js"></script>
+</body>
+</html>

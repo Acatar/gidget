@@ -1,0 +1,11 @@
+{
+  "name": "gidget",
+  "dependencies": {
+    "jquery": "*",
+    "mocha": "*",
+    "chai": "*",
+    "sammy": "*",
+    "hilary": "~2.2.1"
+  },
+  "devDependencies": {}
+}
