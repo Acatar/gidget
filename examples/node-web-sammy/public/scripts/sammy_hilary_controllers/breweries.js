@@ -1,9 +1,8 @@
-/*globals Hilary, console*/
 Hilary.scope('node-web-sammy').register({
     name: 'breweries_controller',
     dependencies: ['GidgetModule', 'jQuery'],
     factory: function (GidgetModule, $) {
-        "use strict";
+        'use strict';
 
         var self = new GidgetModule(),
             paramsToHtml,
@@ -16,15 +15,15 @@ Hilary.scope('node-web-sammy').register({
                 i,
                 prop;
 
+            for (prop in params) {
+                if (params.hasOwnProperty(prop) && prop !== 'splat') {
+                    html += '<p>params.' + prop + ' = ' + params[prop] + '</p>';
+                }
+            }
+
             if (params.splat) {
                 for (i = 0; i < params.splat.length; i += 1) {
-                    html += '<p>param[' + i.toString() + ']: ' + params.splat[i] + '</p>';
-                }
-            } else {
-                for (prop in params) {
-                    if (params.hasOwnProperty(prop)) {
-                        html += '<p>' + prop + ': ' + params[prop] + '</p>';
-                    }
+                    html += '<p>params.splat[' + i.toString() + '] = ' + params.splat[i] + '</p>';
                 }
             }
 
@@ -40,7 +39,7 @@ Hilary.scope('node-web-sammy').register({
         };
 
         breweriesHandler = function (params) {
-            $('#main').html('<h1>/sammy_hilary/#/breweries/:id</h1>' + paramsToHtml(params));
+            $('#main').html('<h1>/sammy_hilary/#/breweries/:brewery</h1>' + paramsToHtml(params));
         };
 
         breweriesHandler.before = function (verb, path, params) {
@@ -52,13 +51,11 @@ Hilary.scope('node-web-sammy').register({
         };
 
         beersHandler = function (params) {
-            $('#main').html('<h1>/sammy_hilary/#/breweries/:id/beers/:beerId</h1>' + paramsToHtml(params));
-
-            console.log('named-params', params);
+            $('#main').html('<h1>/sammy_hilary/#/breweries/:brewery/beers/:beer</h1>' + paramsToHtml(params));
         };
 
-        self.get['/sammy_hilary/#/breweries/:id'] = breweriesHandler;
-        self.get['/sammy_hilary/#/breweries/:id/beers/:beerId'] = beersHandler;
+        self.get['/sammy_hilary/#/breweries/:brewery'] = breweriesHandler;
+        self.get['/sammy_hilary/#/breweries/:brewery/beers/:beer'] = beersHandler;
 
         return self;
     }

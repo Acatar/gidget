@@ -1,6 +1,6 @@
 {
   "name": "gidget-solution",
-  "version": "0.0.1",
+  "version": "0.0.10",
   "private": true,
   "scripts": {
       "start": "node build & nodemon ./examples/node-web/bin/www"
