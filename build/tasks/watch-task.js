@@ -7,7 +7,7 @@ module.exports = function (grunt) {
     grunt.config.set('watch', {
         js: {
             files: '../src/**/*.js',
-            tasks: ['mocha', 'uglify:debug', 'uglify:release', 'copy:js'],
+            tasks: ['uglify:debug', 'uglify:release', 'karma:headless', 'copy:js'],
             options: { nospawn: true, livereload: true, debounceDelay: 250 }
         }
     });

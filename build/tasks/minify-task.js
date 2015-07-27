@@ -36,7 +36,7 @@ module.exports = function (grunt) {
             },
             files: {
                 '../release/gidget.js': gidgetFiles,
-                '../release/bootstrappers.sammy.js': ['../src/gidget.bootstrappers.sammy.js']
+                '../release/gidget.bootstrappers.sammy.js': ['../src/bootstrappers.sammy.js']
                 //,'../release/bootstrappers.simrou.js': ['../src/gidget.bootstrappers.simrou.js']
             }
         },
@@ -50,7 +50,7 @@ module.exports = function (grunt) {
             },
             files: {
                 '../release/gidget.min.js': gidgetFiles,
-                '../release/bootstrappers.sammy.min.js': ['../src/gidget.bootstrappers.sammy.js']
+                '../release/gidget.bootstrappers.sammy.min.js': ['../src/bootstrappers.sammy.js']
                 //,'../release/bootstrappers.simrou.min.js': ['../src/gidget.bootstrappers.simrou.js']
             }
         }

@@ -8,5 +8,19 @@
   "dependencies": {
       "fs-extra": "0.14.x",
       "uglify-js": "2.4.x"
-  }
+  },
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/Acatar/gidget.git"
+  },
+  "keywords": [
+      "SPA",
+      "single page application"
+  ],
+  "author": "&y <andes.collab@gmail.com> (https://github.com/losandes)",
+  "license": "MIT",
+  "bugs": {
+      "url": "https://github.com/Acatar/gidget/issues"
+  },
+  "homepage": "https://github.com/Acatar/gidget"
 }

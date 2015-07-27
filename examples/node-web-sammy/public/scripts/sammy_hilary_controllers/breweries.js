@@ -4,7 +4,7 @@ Hilary.scope('node-web-sammy').register({
     dependencies: ['GidgetModule', 'jQuery'],
     factory: function (GidgetModule, $) {
         "use strict";
-        
+
         var self = new GidgetModule(),
             paramsToHtml,
             logLifecycle,
@@ -30,7 +30,7 @@ Hilary.scope('node-web-sammy').register({
 
             return html;
         };
-        
+
         logLifecycle = function (message, verb, path, params) {
             console.log(message, {
                 verb: verb,
@@ -38,21 +38,23 @@ Hilary.scope('node-web-sammy').register({
                 params: params
             });
         };
-        
+
         breweriesHandler = function (params) {
             $('#main').html('<h1>/sammy_hilary/#/breweries/:id</h1>' + paramsToHtml(params));
         };
-        
+
         breweriesHandler.before = function (verb, path, params) {
             logLifecycle('before breweries route', verb, path, params);
         };
-        
+
         breweriesHandler.after = function (verb, path, params) {
             logLifecycle('after breweries route', verb, path, params);
         };
-        
+
         beersHandler = function (params) {
             $('#main').html('<h1>/sammy_hilary/#/breweries/:id/beers/:beerId</h1>' + paramsToHtml(params));
+
+            console.log('named-params', params);
         };
 
         self.get['/sammy_hilary/#/breweries/:id'] = breweriesHandler;
