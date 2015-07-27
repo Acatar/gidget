@@ -1,11 +1,15 @@
-/*globals describe, it, Gidget, chai, console*/
-var expect = chai.expect;
+Hilary.scope('gidget-tests').register({
+    name: 'gidget.browser.fixture',
+    dependencies: ['describe', 'it', 'expect'],
+    factory: function (describe, it, expect) {
+        'use strict';
 
+        describe('Gidget', function () {
 
-describe('Gidget', function () {
-    "use strict";
-    
-    it('should exist on window', function () {
-        expect(Gidget).to.not.be.undefined;
-    });
+            it('should exist on window', function () {
+                expect(window.Gidget).to.not.equal(undefined);
+            });
+
+        });
+    }
 });

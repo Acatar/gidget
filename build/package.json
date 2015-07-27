@@ -9,14 +9,24 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/Acatar/hilaryjs"
+        "url": "https://github.com/Acatar/gidget"
     },
     "dependencies": {
+        "chalk": "^1.1.0",
         "grunt": "0.4.x",
+        "grunt-contrib-copy": "0.4.x",
         "grunt-contrib-uglify": "0.7.x",
-        "grunt-mocha": "*",
-        "grunt-mocha-test": "*",
         "grunt-contrib-watch": "0.6.x",
-        "grunt-contrib-copy": "0.4.x"
+        "grunt-karma": "*",
+        "grunt-mocha-test": "*",
+        "karma-chai": "*",
+        "karma-chrome-launcher": "*",
+        "karma-firefox-launcher": "*",
+        "karma-ie-launcher": "*",
+        "karma-mocha": "*",
+        "karma-mocha-reporter": "*",
+        "karma-nyan-reporter": "*",
+        "karma-phantomjs-launcher": "*",
+        "karma-safari-launcher": "*"
     }
 }

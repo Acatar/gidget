@@ -1,4 +1,4 @@
-/*! gidget-builder 2015-05-22 */
+/*! gidget-builder 2015-07-27 */
 Hilary.scope("GidgetContainer").register({
     name: "implementr",
     factory: function() {
