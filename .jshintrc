@@ -92,6 +92,8 @@
         "Window": false,
         "Hilary": false,
         "jQuery": false,
-        "mocha": false
+        "mocha": false,
+        "Sammy": false,
+        "Gidget": false
     }
 }

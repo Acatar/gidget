@@ -1,6 +1,5 @@
-/*globals Hilary, jQuery, Sammy, Gidget, console*/
 (function (scope, $, Sammy, Gidget) {
-    "use strict";
+    'use strict';
 
     var compose, start, configureRoutes, configureApplicationContainer, configureApplicationLifecycle;
 
@@ -36,9 +35,9 @@
     */
     configureApplicationContainer = function (gidget) {
         scope.register({
-            name: 'GidgetModule',
+            name: '$gidgetModule',
             factory: function () {
-                return gidget.GidgetModule;
+                return new gidget.GidgetModule();
             }
         });
 
@@ -67,8 +66,8 @@
     // Register Modules
     */
     configureRoutes = function (gidget) {
-        gidget.registerModule(scope.resolve('home_controller'));
-        gidget.registerModule(scope.resolve('breweries_controller'));
+        gidget.registerModule(scope.resolve('homeController'));
+        gidget.registerModule(scope.resolve('breweriesController'));
     };
 
     /*
