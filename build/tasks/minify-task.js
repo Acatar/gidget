@@ -7,11 +7,11 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-uglify'); // node
 
     gidgetFiles = [
-        '../src/implementr.js',
-        '../src/exceptions.js',
+        '../src/ExceptionHandler.js',
         '../src/locales/en_US.js',
         '../src/IGidgetModule.js',
         '../src/GidgetModule.js',
+        '../src/GidgetRoute.js',
         '../src/IRouteEngine.js',
         '../src/RouteEngine.js',
         '../src/IGidgetApp.js',
@@ -19,7 +19,7 @@ module.exports = function (grunt) {
         '../src/GidgetApp.js',
         '../src/GidgetCtor.js',
         '../src/IOptions.js',
-        '../src/Gidget.js'
+        '../src/gidget.js'
     ];
 
     // Update the grunt config

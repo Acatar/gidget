@@ -1,28 +1,25 @@
-/*globals Hilary*/
 Hilary.scope('GidgetContainer').register({
     name: 'GidgetApp',
-    dependencies: ['implementr', 'IGidgetApp', 'locale', 'exceptions'],
-    factory: function (implementr, IGidgetApp, locale, exceptions) {
-        "use strict";
-        return function (components) {
-            var self = {};
-            
-            if (!implementr.implementsInterface(components, IGidgetApp)) {
-                exceptions.throwNotImplementedException(locale.errors.interfaces.notAnIGidgetApp);
-                return;
-            }
+    dependencies: ['IGidgetApp', 'locale', 'exceptions'],
+    factory: function (IGidgetApp, locale, exceptions) {
+        'use strict';
 
-            self.GidgetModule = components.GidgetModule;
-            self.routeEngine = components.routeEngine;
-            self.pipelines = function () {
+        return function (components) {
+            components = components || {};
+
+            components.pipelines = function () {
                 return {
-                    before: self.routeEngine.before,
-                    after: self.routeEngine.after
+                    before: components.routeEngine.before,
+                    after: components.routeEngine.after
                 };
             };
 
+            if (!IGidgetApp.syncSignatureMatches(components).result) {
+                exceptions.throwNotImplementedException(locale.errors.interfaces.requiresImplementation, IGidgetApp.syncSignatureMatches(components).errors);
+            }
+
             /*
-            //    register a module (i.e. a controller)
+            //    components.registerModule: register a module (i.e. a controller)
             //    @param gidgetModule: an instance of GidgetModule
             //
             //    i.e.
@@ -34,9 +31,8 @@ Hilary.scope('GidgetContainer').register({
             //
             //      gidget.registerModule(myModule);
             */
-            self.registerModule = components.registerModule;
 
-            return self;
+            return components;
         };
     }
 });

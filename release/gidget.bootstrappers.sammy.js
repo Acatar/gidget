@@ -7,6 +7,9 @@ Hilary.scope("GidgetContainer").register({
         parseParams = function(path, params) {
             if (typeof path === "string") {
                 var paramNames = path.match(/:([^\/]*)/g), i;
+                if (paramNames === null || paramNames.length < 1) {
+                    return params;
+                }
                 for (i = 0; i < paramNames.length; i += 1) {
                     params[paramNames[i].replace(/:/g, "")] = params.splat[i];
                 }

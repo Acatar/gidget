@@ -16,6 +16,8 @@ module.exports = function (grunt) {
     grunt.registerTask('default', ['uglify:debug', 'uglify:release', 'karma:unit_' + os, 'copy:js']);
     grunt.registerTask('mon', ['watch']);
     grunt.registerTask('build', ['uglify:debug', 'uglify:release', 'copy:js']);
+
     grunt.registerTask('test', ['uglify:debug', 'uglify:release', 'karma:unit_' + os]);
+    grunt.registerTask('debug-browser', ['uglify:debug', 'uglify:release', 'karma:debug_' + os]);
 
 };

@@ -1,40 +1,65 @@
-/*globals Hilary, module */
-(function (exports, scope) {
-    "use strict";
-    
+(function (exports, scope, Hilary) {
+    'use strict';
+
     var compose, start;
-    
-    compose = function (onReady) {
-        var locale = scope.resolve('locale::en_US');
-        
+
+    compose = function () {
+        var locale = scope.resolve('locale::en_US'),
+            exceptions;
+
         scope.register({
             name: 'locale',
             factory: function () {
                 return locale;
             }
         });
-        
+
+        scope.register({
+            name: 'Blueprint',
+            factory: function () {
+                return Hilary.Blueprint;
+            }
+        });
+
+        scope.register({
+            name: 'exceptions',
+            dependencies: ['ExceptionHandler'],
+            factory: function (ExceptionHandler) {
+                if (exceptions) {
+                    return exceptions;
+                }
+
+                exceptions = new ExceptionHandler(function (exception) {
+                    if (exception.data) {
+                        console.log(exception.message, exception.data);
+                    }
+
+                    throw exception;
+                });
+
+                return exceptions;
+            }
+        });
+
         scope.register({
             name: 'Gidget',
-            dependencies: ['IRouteEngine', 'RouteEngine', 'GidgetCtor', 'IOptions', 'implementr', 'exceptions', 'locale'],
-            factory: function (IRouteEngine, RouteEngine, GidgetCtor, IOptions, implementr, exceptions, locale) {
+            dependencies: ['RouteEngine', 'GidgetCtor', 'IOptions', 'exceptions', 'locale'],
+            factory: function (RouteEngine, GidgetCtor, IOptions, exceptions, locale) {
                 return function (options) {
                     var self = {},
+                        optionsAreValid,
                         router;
-                    
-                    if (!implementr.implementsInterface(options, IOptions)) {
+
+                    optionsAreValid = IOptions.syncSignatureMatches(options);
+
+                    if (!optionsAreValid.result) {
                         exceptions.throwNotImplementedException(locale.errors.interfaces.missingOptions);
                         return;
                     }
-                    
-                    router = scope.resolve(options.routerName);
-                    
-                    router.compose(RouteEngine, options, function (routeEngine) {
-                        if (!implementr.implementsInterface(routeEngine, IRouteEngine)) {
-                            exceptions.throwNotImplementedException(locale.errors.interfaces.notAnIRouteEngine);
-                            return;
-                        }
 
+                    router = scope.resolve(options.routerName);
+
+                    router.compose(RouteEngine, options, function (routeEngine) {
                         self = new GidgetCtor(routeEngine, options.callback);
 
                         return self;
@@ -47,11 +72,11 @@
 
         start();
     };
-    
+
     start = function () {
         exports.Gidget = scope.resolve('Gidget');
     };
-    
+
     compose(start);
-    
-}((typeof module !== 'undefined' && module.exports) ? module.exports : window, Hilary.scope('GidgetContainer')));
+
+}((typeof module !== 'undefined' && module.exports) ? module.exports : window, Hilary.scope('GidgetContainer'), Hilary));

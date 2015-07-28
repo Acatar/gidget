@@ -8,6 +8,7 @@
         scope.register({ name: 'describe', factory: function () { return describe; } });
         scope.register({ name: 'it', factory: function () { return it; } });
         scope.register({ name: 'expect', factory: function () { return expect; } });
+        // scope.register({ name: 'Blueprint', factory: function () { return Hilary.Blueprint; } });
     };
 
 
@@ -16,6 +17,7 @@
 
         scope.resolve('gidget.browser.fixture');
         scope.resolve('gidget.browser.bootstrappers.sammy.fixture');
+        scope.resolve('gidget.blueprint.fixture');
     };
 
     start();

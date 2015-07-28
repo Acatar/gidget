@@ -5,7 +5,7 @@
     "mocha": "*",
     "chai": "*",
     "sammy": "*",
-    "hilary": "~2.2.1"
+    "hilary": "~3.1.8"
   },
   "devDependencies": {}
 }

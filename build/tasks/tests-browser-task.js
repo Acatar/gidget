@@ -13,7 +13,7 @@ module.exports = function (grunt) {
             frameworks: ['mocha', 'chai'],
             files: [
                 'test/browser/bower_components/jquery/dist/jquery.min.js',
-                'test/browser/bower_components/hilary/release/hilary.min.js',
+                'test/browser/bower_components/hilary/release/hilary.js',
                 'test/browser/test.setup.js',
                 // gidget
                 'release/gidget.min.js',
