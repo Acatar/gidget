@@ -1,27 +1,19 @@
-/*jslint regexp: true*/
-/*globals Hilary*/
 Hilary.scope('GidgetContainer').register({
     name: 'RouteEngine',
-    dependencies: ['implementr', 'IRouteEngine', 'locale', 'exceptions'],
-    factory: function (implementr, IRouteEngine, locale, exceptions) {
-        "use strict";
-        
-//        Component = function (component) {
-//            if (implementr.implementsInterface(component, IComponent)) {
-//                return makeComponent(component);
-//            }
-//        };
-        
+    dependencies: ['IRouteEngine', 'locale', 'exceptions'],
+    factory: function (IRouteEngine, locale, exceptions) {
+        'use strict';
+
         return function (router) {
             var self = {},
                 pipelineRegistries,
                 regularExpressions;
 
-            if (!implementr.implementsInterface(router, IRouteEngine)) {
-                exceptions.throwNotImplementedException(locale.errors.interfaces.notAnIRouteEngine);
+            if (!IRouteEngine.syncSignatureMatches(router).result) {
+                exceptions.throwNotImplementedException(locale.errors.interfaces.notAnIRouteEngine, IRouteEngine.syncSignatureMatches(router).errors);
                 return;
             }
-            
+
             pipelineRegistries = {
                 before: [],
                 after: []
@@ -66,7 +58,8 @@ Hilary.scope('GidgetContainer').register({
 
                 pattern = String(pattern);
                 names = pattern.match(regularExpressions.allParams);
-                if (names != null) {
+                
+                if (names !== null) {
                     params = (function () {
                         var i,
                             len,
@@ -108,7 +101,7 @@ Hilary.scope('GidgetContainer').register({
                     pipelineToExecute[i](verb, path, params, event);
                 }
             };
-            
+
             return self;
         };
     }

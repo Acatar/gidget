@@ -31,13 +31,12 @@ We're going to follow the composition root pattern in standing up our route engi
 
 First let's create a route module/controller:
 ```JavaScript
-/*globals Hilary*/
 Hilary.scope('myWebApp').register({
     name: 'homeController',
     dependencies: ['GidgetModule', 'jQuery'],
     factory: function (GidgetModule, $) {
         "use strict";
-        
+
         var self = new GidgetModule();
 
         self.get['/sammy_hilary'] = function (params) {
@@ -62,13 +61,12 @@ Hilary.scope('myWebApp').register({
 
 And how about another route module/controller - this time one that supports parameters and has a lifecycle:
 ```JavaScript
-/*globals Hilary, console*/
 Hilary.scope('myWebApp').register({
     name: 'breweriesController',
     dependencies: ['GidgetModule', 'jQuery'],
     factory: function (GidgetModule, $) {
         "use strict";
-        
+
         var self = new GidgetModule(),
             paramsToHtml,
             logLifecycle,
@@ -80,21 +78,21 @@ Hilary.scope('myWebApp').register({
                 i,
                 prop;
 
+            for (prop in params) {
+                if (params.hasOwnProperty(prop) && prop !== 'splat') {
+                    html += '<p>params.' + prop + ' = ' + params[prop] + '</p>';
+                }
+            }
+
             if (params.splat) {
                 for (i = 0; i < params.splat.length; i += 1) {
-                    html += '<p>param[' + i.toString() + ']: ' + params.splat[i] + '</p>';
-                }
-            } else {
-                for (prop in params) {
-                    if (params.hasOwnProperty(prop)) {
-                        html += '<p>' + prop + ': ' + params[prop] + '</p>';
-                    }
+                    html += '<p>params.splat[' + i.toString() + '] = ' + params.splat[i] + '</p>';
                 }
             }
 
             return html;
         };
-        
+
         logLifecycle = function (message, verb, path, params) {
             console.log(message, {
                 verb: verb,
@@ -102,25 +100,25 @@ Hilary.scope('myWebApp').register({
                 params: params
             });
         };
-        
+
         breweriesHandler = function (params) {
-            $('#main').html('<h1>/sammy_hilary/#/breweries/:id</h1>' + paramsToHtml(params));
+            $('#main').html('<h1>/sammy_hilary/#/breweries/:brewery</h1>' + paramsToHtml(params));
         };
-        
+
         breweriesHandler.before = function (verb, path, params) {
             logLifecycle('before breweries route', verb, path, params);
         };
-        
+
         breweriesHandler.after = function (verb, path, params) {
             logLifecycle('after breweries route', verb, path, params);
         };
-        
+
         beersHandler = function (params) {
-            $('#main').html('<h1>/sammy_hilary/#/breweries/:id/beers/:beerId</h1>' + paramsToHtml(params));
+            $('#main').html('<h1>/sammy_hilary/#/breweries/:brewery/beers/:beer</h1>' + paramsToHtml(params));
         };
 
-        self.get['/sammy_hilary/#/breweries/:id'] = breweriesHandler;
-        self.get['/sammy_hilary/#/breweries/:id/beers/:beerId'] = beersHandler;
+        self.get['/sammy_hilary/#/breweries/:brewery'] = breweriesHandler;
+        self.get['/sammy_hilary/#/breweries/:brewery/beers/:beer'] = beersHandler;
 
         return self;
     }
@@ -129,12 +127,11 @@ Hilary.scope('myWebApp').register({
 
 OK, now that we have some controllers, let's start the app:
 ```JavaScript
-/*globals Hilary, jQuery, Sammy, Gidget*/
 (function (scope, $, Sammy, Gidget) {
     "use strict";
-    
+
     var compose, configureRoutes, configureApplicationContainer;
-    
+
     /*
     // compose the application and dependency graph
     */
@@ -151,7 +148,7 @@ OK, now that we have some controllers, let's start the app:
             }
         });
     };
-    
+
     /*
     // Configure the IoC container - register singleton dependencies and what not
     */
@@ -163,7 +160,7 @@ OK, now that we have some controllers, let's start the app:
             }
         });
     };
-    
+
     /*
     // Register Modules
     */
@@ -174,7 +171,7 @@ OK, now that we have some controllers, let's start the app:
 
     // START
     compose();
-    
+
 }(Hilary.scope('myWebApp'), jQuery, Sammy, Gidget));
 ```
 
@@ -193,12 +190,11 @@ configureApplicationLifecycle = function (pipelines) {
 
 When we're done, it should look like this:
 ```JavaScript
-/*globals Hilary, jQuery, Sammy, Gidget*/
 (function (scope, $, Sammy, Gidget) {
     "use strict";
-    
+
     var compose, configureRoutes, configureApplicationContainer, configureApplicationLifecycle;
-    
+
     /*
     // compose the application and dependency graph
     */
@@ -216,7 +212,7 @@ When we're done, it should look like this:
             }
         });
     };
-    
+
     /*
     // Configure the IoC container - register singleton dependencies and what not
     */
@@ -228,7 +224,7 @@ When we're done, it should look like this:
             }
         });
     };
-    
+
     /*
     // Register application lifecycle pipeline events
     */
@@ -241,7 +237,7 @@ When we're done, it should look like this:
             console.log('finished navigating to:', { verb: verb, path: path, params: params });
         });
     };
-    
+
     /*
     // Register Modules
     */
@@ -252,7 +248,7 @@ When we're done, it should look like this:
 
     // START
     compose();
-    
+
 }(Hilary.scope('myWebApp'), jQuery, Sammy, Gidget));
 ```
 

@@ -1,17 +1,16 @@
-/*globals Hilary*/
 Hilary.scope('GidgetContainer').register({
     name: 'GidgetCtor',
-    dependencies: ['IGidgetModule', 'GidgetModule', 'GidgetApp', 'implementr', 'locale', 'exceptions'],
-    factory: function (IGidgetModule, GidgetModule, GidgetApp, implementr, locale, exceptions) {
-        "use strict";
-        
+    dependencies: ['IGidgetModule', 'GidgetModule', 'GidgetRoute', 'GidgetApp', 'locale', 'exceptions'],
+    factory: function (IGidgetModule, GidgetModule, GidgetRoute, GidgetApp, locale, exceptions) {
+        'use strict';
+
         return function (routeEngine, callback) {
             var registerModule,
                 gidgetApp;
 
             registerModule = function (gidgetModule) {
-                if (!implementr.implementsInterface(gidgetModule, IGidgetModule)) {
-                    exceptions.throwNotImplementedException(locale.errors.interfaces.notAnIGidgetModule);
+                if (!IGidgetModule.syncSignatureMatches(gidgetModule).result) {
+                    exceptions.throwNotImplementedException(locale.errors.interfaces.notAnIGidgetModule, IGidgetModule.syncSignatureMatches(gidgetModule).errors);
                     return;
                 }
 
@@ -56,9 +55,10 @@ Hilary.scope('GidgetContainer').register({
                     }
                 }
             };
-            
+
             gidgetApp = new GidgetApp({
                 GidgetModule: GidgetModule,
+                GidgetRoute: GidgetRoute,
                 routeEngine: routeEngine,
                 registerModule: registerModule
             });
@@ -66,7 +66,7 @@ Hilary.scope('GidgetContainer').register({
             if (typeof callback === 'function') {
                 callback(gidgetApp);
             }
-            
+
             return gidgetApp;
         };
     }

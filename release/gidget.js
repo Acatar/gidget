@@ -1,35 +1,8 @@
-/*! gidget-builder 2015-05-22 */
+/*! gidget-builder 2015-07-27 */
 Hilary.scope("GidgetContainer").register({
-    name: "implementr",
-    factory: function() {
-        "use strict";
-        var implementsInterface = function(obj, intrface) {
-            if (!obj) {
-                throw new Error("A first argument of an object that should implement an interface is required");
-            }
-            if (!intrface || typeof intrface.validate !== "function" || intrface.validate.length !== 1) {
-                throw new Error("A second argument with a validate function that accepts one argument is required");
-            }
-            if (typeof intrface.name !== "string") {
-                throw new Error("A second argument with a name string is required");
-            }
-            if (intrface.validate(obj)) {
-                obj.$_interfaces = obj.$_interfaces || {};
-                obj.$_interfaces[intrface.name] = true;
-                return true;
-            } else {
-                return false;
-            }
-        };
-        return {
-            implementsInterface: implementsInterface
-        };
-    }
-});
-
-Hilary.scope("GidgetContainer").register({
-    name: "exceptions",
-    factory: function() {
+    name: "ExceptionHandler",
+    dependencies: [],
+    factory: function(onError) {
         "use strict";
         var self = {
             makeException: undefined,
@@ -37,10 +10,24 @@ Hilary.scope("GidgetContainer").register({
             throwArgumentException: undefined,
             notImplementedException: undefined,
             throwNotImplementedException: undefined,
-            throwException: undefined
+            fetchException: undefined,
+            throwFetchException: undefined,
+            throwException: undefined,
+            "throw": undefined
         }, makeException;
+        onError = typeof onError === "function" ? onError : function(exception) {
+            console.error(exception);
+            throw exception;
+        };
         makeException = function(name, message, data) {
-            var msg = typeof message === "string" ? message : name, err = new Error(msg);
+            var msg, err;
+            if (typeof name === "object" && typeof name.message === "string") {
+                msg = name.message;
+                err = name;
+            } else {
+                msg = typeof message === "string" ? message : name;
+                err = new Error(msg);
+            }
             err.message = msg;
             if (name !== msg) {
                 err.name = name;
@@ -56,16 +43,32 @@ Hilary.scope("GidgetContainer").register({
             return makeException("ArgumentException", msg, data);
         };
         self.throwArgumentException = function(message, argument, data) {
-            self.throwException(self.argumentException(message, argument, data));
+            self.throw(self.argumentException(message, argument, data));
         };
         self.notImplementedException = function(message, data) {
             return makeException("NotImplementedException", message, data);
         };
         self.throwNotImplementedException = function(message, data) {
-            self.throwException(self.notImplementedException(message, data));
+            self.throw(self.notImplementedException(message, data));
+        };
+        self.fetchException = function(response) {
+            response = response || {};
+            response.status = response.status || "unknown";
+            return makeException("FetchException", "Server Request Failed with status: " + response.status, response);
+        };
+        self.throwFetchException = function(response) {
+            self.throw(self.fetchException(response));
+            throw new Error("Server Request Failed with status: " + response.status);
         };
         self.throwException = function(exception) {
-            throw exception;
+            self.throw(exception);
+        };
+        self.throw = function(exception) {
+            if (typeof exception === "string") {
+                onError(makeException(exception));
+            } else {
+                onError(exception);
+            }
         };
         return self;
     }
@@ -76,7 +79,7 @@ Hilary.scope("GidgetContainer").register({
     factory: {
         errors: {
             interfaces: {
-                requiresImplementation: "An implementation is required to create a new instance of an interface",
+                requiresImplementation: "A valid implementation is required to create a new instance of an interface",
                 requiresProperty: "The implementation is missing a required property: ",
                 requiresArguments: "The implementation of this function requires the arguments: ",
                 notAnIRouteEngine: "The router instance that was passed into the RouteEngine constructor does not implement IRouteEngine",
@@ -90,29 +93,17 @@ Hilary.scope("GidgetContainer").register({
 
 Hilary.scope("GidgetContainer").register({
     name: "IGidgetModule",
-    dependencies: [ "locale", "exceptions" ],
-    factory: function(locale, exceptions) {
+    dependencies: [ "Blueprint" ],
+    factory: function(Blueprint) {
         "use strict";
-        return {
-            name: "IGidgetModule",
-            validate: function(implementation) {
-                var validateVerb;
-                if (!implementation) {
-                    exceptions.throwNotImplementedException(locale.errors.interfaces.requiresImplementation);
-                }
-                validateVerb = function(verb) {
-                    if (typeof implementation[verb] !== "object") {
-                        exceptions.throwNotImplementedException(locale.errors.interfaces.requiresProperty + "IRouteEngine." + verb);
-                    }
-                };
-                validateVerb("get");
-                validateVerb("post");
-                validateVerb("put");
-                validateVerb("del");
-                validateVerb("any");
-                return true;
-            }
-        };
+        return new Blueprint({
+            __blueprintId: "IGidgetModule",
+            get: "object",
+            post: "object",
+            put: "object",
+            del: "object",
+            any: "object"
+        });
     }
 });
 
@@ -133,54 +124,73 @@ Hilary.scope("GidgetContainer").register({
 });
 
 Hilary.scope("GidgetContainer").register({
-    name: "IRouteEngine",
-    dependencies: [ "locale", "exceptions" ],
-    factory: function(locale, exceptions) {
+    name: "GidgetRoute",
+    factory: function() {
         "use strict";
-        return {
-            name: "IRouteEngine",
-            validate: function(implementation) {
-                var routeHandlerExists;
-                if (!implementation) {
-                    exceptions.throwNotImplementedException(locale.errors.interfaces.requiresImplementation);
-                }
-                routeHandlerExists = function(verb) {
-                    if (typeof implementation[verb] !== "function") {
-                        exceptions.throwNotImplementedException(locale.errors.interfaces.requiresProperty + "IRouteEngine." + verb);
-                    }
-                    if (implementation[verb].length !== 2) {
-                        exceptions.throwNotImplementedException(locale.errors.interfaces.requiresArguments + "IRouteEngine." + verb + "(path, callback)");
-                    }
-                };
-                routeHandlerExists("get");
-                routeHandlerExists("post");
-                routeHandlerExists("put");
-                routeHandlerExists("del");
-                routeHandlerExists("any");
-                if (typeof implementation.start !== "function") {
-                    exceptions.throwNotImplementedException(locale.errors.interfaces.requiresProperty + "IRouteEngine.start");
-                }
-                if (typeof implementation.navigate !== "function") {
-                    exceptions.throwNotImplementedException(locale.errors.interfaces.requiresProperty + "IRouteEngine.navigate");
-                }
-                if (implementation.navigate.length !== 2) {
-                    exceptions.throwNotImplementedException(locale.errors.interfaces.requiresArguments + "IRouteEngine.navigate(hash, updateUrlBar)");
-                }
-                return true;
+        return function(route) {
+            if (!route) {
+                throw new Error("GidgetRoute does not have a parameterless constructor");
             }
+            if (typeof route.routeHandler !== "function") {
+                throw new Error("A routeHandler function is required when creating a new GidgetRoute");
+            }
+            var self = route.routeHandler;
+            if (typeof route.before === "function") {
+                self.before = route.before;
+            }
+            if (typeof route.after === "function") {
+                self.after = route.after;
+            }
+            return self;
         };
     }
 });
 
 Hilary.scope("GidgetContainer").register({
+    name: "IRouteEngine",
+    dependencies: [ "Blueprint" ],
+    factory: function(Blueprint) {
+        "use strict";
+        return new Blueprint({
+            __blueprintId: "IRouteEngine",
+            get: {
+                type: "function",
+                args: [ "path", "callback" ]
+            },
+            post: {
+                type: "function",
+                args: [ "path", "callback" ]
+            },
+            put: {
+                type: "function",
+                args: [ "path", "callback" ]
+            },
+            del: {
+                type: "function",
+                args: [ "path", "callback" ]
+            },
+            any: {
+                type: "function",
+                args: [ "path", "callback" ]
+            },
+            start: "function",
+            navigate: {
+                type: "function",
+                args: [ "hash", "updateUrlBar" ]
+            }
+        });
+    }
+});
+
+Hilary.scope("GidgetContainer").register({
     name: "RouteEngine",
-    dependencies: [ "implementr", "IRouteEngine", "locale", "exceptions" ],
-    factory: function(implementr, IRouteEngine, locale, exceptions) {
+    dependencies: [ "IRouteEngine", "locale", "exceptions" ],
+    factory: function(IRouteEngine, locale, exceptions) {
         "use strict";
         return function(router) {
             var self = {}, pipelineRegistries, regularExpressions;
-            if (!implementr.implementsInterface(router, IRouteEngine)) {
-                exceptions.throwNotImplementedException(locale.errors.interfaces.notAnIRouteEngine);
+            if (!IRouteEngine.syncSignatureMatches(router).result) {
+                exceptions.throwNotImplementedException(locale.errors.interfaces.notAnIRouteEngine, IRouteEngine.syncSignatureMatches(router).errors);
                 return;
             }
             pipelineRegistries = {
@@ -217,7 +227,7 @@ Hilary.scope("GidgetContainer").register({
                 var flags, name, names, params;
                 pattern = String(pattern);
                 names = pattern.match(regularExpressions.allParams);
-                if (names != null) {
+                if (names !== null) {
                     params = function() {
                         var i, len, results;
                         results = [];
@@ -256,56 +266,64 @@ Hilary.scope("GidgetContainer").register({
 
 Hilary.scope("GidgetContainer").register({
     name: "IGidgetApp",
-    dependencies: [ "locale", "exceptions" ],
-    factory: function(locale, exceptions) {
+    dependencies: [ "Blueprint", "IRouteEngine" ],
+    factory: function(Blueprint, IRouteEngine) {
         "use strict";
-        return {
-            name: "IGidgetApp",
-            validate: function(implementation) {
-                if (!implementation) {
-                    exceptions.throwNotImplementedException(locale.errors.interfaces.requiresImplementation);
+        return new Blueprint({
+            __blueprintId: "IGidgetApp",
+            GidgetModule: "function",
+            GidgetRoute: {
+                type: "function",
+                args: [ "route" ]
+            },
+            routeEngine: {
+                validate: function(engine, errorArray) {
+                    var validationResult = IRouteEngine.syncSignatureMatches(engine);
+                    if (!validationResult.result) {
+                        errorArray = errorArray.concat(validationResult.errors);
+                    }
                 }
-                return true;
+            },
+            pipelines: "function",
+            registerModule: {
+                type: "function",
+                args: [ "gidgetModule" ]
             }
-        };
+        });
     }
 });
 
 Hilary.scope("GidgetContainer").register({
     name: "GidgetApp",
-    dependencies: [ "implementr", "IGidgetApp", "locale", "exceptions" ],
-    factory: function(implementr, IGidgetApp, locale, exceptions) {
+    dependencies: [ "IGidgetApp", "locale", "exceptions" ],
+    factory: function(IGidgetApp, locale, exceptions) {
         "use strict";
         return function(components) {
-            var self = {};
-            if (!implementr.implementsInterface(components, IGidgetApp)) {
-                exceptions.throwNotImplementedException(locale.errors.interfaces.notAnIGidgetApp);
-                return;
-            }
-            self.GidgetModule = components.GidgetModule;
-            self.routeEngine = components.routeEngine;
-            self.pipelines = function() {
+            components = components || {};
+            components.pipelines = function() {
                 return {
-                    before: self.routeEngine.before,
-                    after: self.routeEngine.after
+                    before: components.routeEngine.before,
+                    after: components.routeEngine.after
                 };
             };
-            self.registerModule = components.registerModule;
-            return self;
+            if (!IGidgetApp.syncSignatureMatches(components).result) {
+                exceptions.throwNotImplementedException(locale.errors.interfaces.requiresImplementation, IGidgetApp.syncSignatureMatches(components).errors);
+            }
+            return components;
         };
     }
 });
 
 Hilary.scope("GidgetContainer").register({
     name: "GidgetCtor",
-    dependencies: [ "IGidgetModule", "GidgetModule", "GidgetApp", "implementr", "locale", "exceptions" ],
-    factory: function(IGidgetModule, GidgetModule, GidgetApp, implementr, locale, exceptions) {
+    dependencies: [ "IGidgetModule", "GidgetModule", "GidgetRoute", "GidgetApp", "locale", "exceptions" ],
+    factory: function(IGidgetModule, GidgetModule, GidgetRoute, GidgetApp, locale, exceptions) {
         "use strict";
         return function(routeEngine, callback) {
             var registerModule, gidgetApp;
             registerModule = function(gidgetModule) {
-                if (!implementr.implementsInterface(gidgetModule, IGidgetModule)) {
-                    exceptions.throwNotImplementedException(locale.errors.interfaces.notAnIGidgetModule);
+                if (!IGidgetModule.syncSignatureMatches(gidgetModule).result) {
+                    exceptions.throwNotImplementedException(locale.errors.interfaces.notAnIGidgetModule, IGidgetModule.syncSignatureMatches(gidgetModule).errors);
                     return;
                 }
                 var gets = gidgetModule.get, puts = gidgetModule.put, posts = gidgetModule.posts, dels = gidgetModule.dels, anys = gidgetModule.anys, get, put, post, del, any;
@@ -337,6 +355,7 @@ Hilary.scope("GidgetContainer").register({
             };
             gidgetApp = new GidgetApp({
                 GidgetModule: GidgetModule,
+                GidgetRoute: GidgetRoute,
                 routeEngine: routeEngine,
                 registerModule: registerModule
             });
@@ -350,33 +369,21 @@ Hilary.scope("GidgetContainer").register({
 
 Hilary.scope("GidgetContainer").register({
     name: "IOptions",
-    dependencies: [ "locale", "exceptions" ],
-    factory: function(locale, exceptions) {
+    dependencies: [ "Blueprint" ],
+    factory: function(Blueprint) {
         "use strict";
-        return {
-            name: "IOptions",
-            validate: function(implementation) {
-                var routeHandlerExists;
-                if (!implementation) {
-                    exceptions.throwNotImplementedException(locale.errors.interfaces.requiresImplementation);
-                }
-                if (typeof implementation.routerName !== "string") {
-                    exceptions.throwNotImplementedException(locale.errors.interfaces.requiresProperty + "IOptions.routerName");
-                }
-                if (typeof implementation.router === "undefined") {
-                    exceptions.throwNotImplementedException(locale.errors.interfaces.requiresProperty + "IOptions.router");
-                }
-                return true;
-            }
-        };
+        return new Blueprint({
+            __blueprintId: "IOptions",
+            routerName: "string"
+        });
     }
 });
 
-(function(exports, scope) {
+(function(exports, scope, Hilary) {
     "use strict";
     var compose, start;
-    compose = function(onReady) {
-        var locale = scope.resolve("locale::en_US");
+    compose = function() {
+        var locale = scope.resolve("locale::en_US"), exceptions;
         scope.register({
             name: "locale",
             factory: function() {
@@ -384,21 +391,40 @@ Hilary.scope("GidgetContainer").register({
             }
         });
         scope.register({
+            name: "Blueprint",
+            factory: function() {
+                return Hilary.Blueprint;
+            }
+        });
+        scope.register({
+            name: "exceptions",
+            dependencies: [ "ExceptionHandler" ],
+            factory: function(ExceptionHandler) {
+                if (exceptions) {
+                    return exceptions;
+                }
+                exceptions = new ExceptionHandler(function(exception) {
+                    if (exception.data) {
+                        console.log(exception.message, exception.data);
+                    }
+                    throw exception;
+                });
+                return exceptions;
+            }
+        });
+        scope.register({
             name: "Gidget",
-            dependencies: [ "IRouteEngine", "RouteEngine", "GidgetCtor", "IOptions", "implementr", "exceptions", "locale" ],
-            factory: function(IRouteEngine, RouteEngine, GidgetCtor, IOptions, implementr, exceptions, locale) {
+            dependencies: [ "RouteEngine", "GidgetCtor", "IOptions", "exceptions", "locale" ],
+            factory: function(RouteEngine, GidgetCtor, IOptions, exceptions, locale) {
                 return function(options) {
-                    var self = {}, router;
-                    if (!implementr.implementsInterface(options, IOptions)) {
+                    var self = {}, optionsAreValid, router;
+                    optionsAreValid = IOptions.syncSignatureMatches(options);
+                    if (!optionsAreValid.result) {
                         exceptions.throwNotImplementedException(locale.errors.interfaces.missingOptions);
                         return;
                     }
                     router = scope.resolve(options.routerName);
                     router.compose(RouteEngine, options, function(routeEngine) {
-                        if (!implementr.implementsInterface(routeEngine, IRouteEngine)) {
-                            exceptions.throwNotImplementedException(locale.errors.interfaces.notAnIRouteEngine);
-                            return;
-                        }
                         self = new GidgetCtor(routeEngine, options.callback);
                         return self;
                     });
@@ -412,4 +438,4 @@ Hilary.scope("GidgetContainer").register({
         exports.Gidget = scope.resolve("Gidget");
     };
     compose(start);
-})(typeof module !== "undefined" && module.exports ? module.exports : window, Hilary.scope("GidgetContainer"));
+})(typeof module !== "undefined" && module.exports ? module.exports : window, Hilary.scope("GidgetContainer"), Hilary);

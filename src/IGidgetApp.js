@@ -1,31 +1,29 @@
-/*globals Hilary*/
 Hilary.scope('GidgetContainer').register({
     name: 'IGidgetApp',
-    dependencies: ['locale', 'exceptions'],
-    factory: function (locale, exceptions) {
-        "use strict";
-        
-        return {
-            name: 'IGidgetApp',
-            validate: function (implementation) {
-                if (!implementation) {
-                    exceptions.throwNotImplementedException(locale.errors.interfaces.requiresImplementation);
+    dependencies: ['Blueprint', 'IRouteEngine'],
+    factory: function (Blueprint, IRouteEngine) {
+        'use strict';
+
+        return new Blueprint({
+            __blueprintId: 'IGidgetApp',
+            GidgetModule: 'function',
+            GidgetRoute: {
+                type: 'function',
+                args: ['route']
+            },
+            routeEngine: {
+                validate: function (engine, errorArray) {
+                    var validationResult = IRouteEngine.syncSignatureMatches(engine);
+                    if (!validationResult.result) {
+                        errorArray = errorArray.concat(validationResult.errors);
+                    }
                 }
-                
-//        self.routeEngine = components.routeEngine;
-//        self.GidgetModule = components.GidgetModule;
-//        self.registerModule = components.registerModule;
-                
-//                if (typeof implementation.navigate !== 'function') {
-//                    exceptions.throwNotImplementedException(locale.errors.interfaces.requiresProperty + 'IRouteEngine.navigate');
-//                }
-//
-//                if (implementation.navigate.length !== 2) {
-//                    exceptions.throwNotImplementedException(locale.errors.interfaces.requiresArguments + 'IRouteEngine.navigate(hash, updateUrlBar)');
-//                }
-                
-                return true;
+            },
+            pipelines: 'function',
+            registerModule: {
+                type: 'function',
+                args: ['gidgetModule']
             }
-        };
+        });
     }
 });

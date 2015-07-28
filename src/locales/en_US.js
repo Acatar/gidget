@@ -4,7 +4,7 @@ Hilary.scope('GidgetContainer').register({
     factory: {
         errors: {
             interfaces: {
-                requiresImplementation: 'An implementation is required to create a new instance of an interface',
+                requiresImplementation: 'A valid implementation is required to create a new instance of an interface',
                 requiresProperty: 'The implementation is missing a required property: ',
                 requiresArguments: 'The implementation of this function requires the arguments: ',
                 notAnIRouteEngine: 'The router instance that was passed into the RouteEngine constructor does not implement IRouteEngine',

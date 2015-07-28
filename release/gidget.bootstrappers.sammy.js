@@ -1,32 +1,42 @@
-/*! gidget-builder 2015-05-22 */
+/*! gidget-builder 2015-07-27 */
 Hilary.scope("GidgetContainer").register({
     name: "bootstrappers.sammy",
     factory: function() {
         "use strict";
-        var sammyRouter, compose;
+        var sammyRouter, compose, parseParams;
+        parseParams = function(path, params) {
+            if (typeof path === "string") {
+                var paramNames = path.match(/:([^\/]*)/g), i;
+                if (paramNames === null || paramNames.length < 1) {
+                    return params;
+                }
+                for (i = 0; i < paramNames.length; i += 1) {
+                    params[paramNames[i].replace(/:/g, "")] = params.splat[i];
+                }
+            }
+            return params;
+        };
         sammyRouter = function(sammy, RouteEngine, options) {
             var router, addNewRoute, config = options || {};
             addNewRoute = function(verb, path, callback) {
-                var eventedCallback;
-                if (config.useGidgetRouting) {
-                    path = router.parseRoute(path).expression;
-                }
+                var eventedCallback, newPath;
+                newPath = config.useGidgetRouting ? router.parseRoute(path).expression : path;
                 eventedCallback = function(context) {
-                    var proceed = true;
+                    var proceed = true, params = parseParams(path, context.params);
                     if (typeof callback.before === "function") {
-                        proceed = callback.before(verb, path, context.params);
+                        proceed = callback.before(verb, path, params);
                     }
                     if (proceed === false) {
                         return;
                     }
-                    router.executePipeline(router.pipelineRegistries.before, verb, path, context.params);
-                    callback(context.params);
+                    router.executePipeline(router.pipelineRegistries.before, verb, path, params);
+                    callback(params);
                     if (typeof callback.after === "function") {
-                        callback.after(verb, path, context.params);
+                        callback.after(verb, path, params);
                     }
-                    router.executePipeline(router.pipelineRegistries.after, verb, path, context.params);
+                    router.executePipeline(router.pipelineRegistries.after, verb, path, params);
                 };
-                sammy.route(verb, path, eventedCallback);
+                sammy.route(verb, newPath, eventedCallback);
             };
             router = new RouteEngine({
                 get: function(path, callback) {
