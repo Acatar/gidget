@@ -22,6 +22,13 @@
         });
 
         scope.register({
+            name: 'is',
+            factory: function () {
+                return scope.getContext().is;
+            }
+        });
+
+        scope.register({
             name: 'exceptions',
             dependencies: ['ExceptionHandler'],
             factory: function (ExceptionHandler) {

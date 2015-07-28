@@ -23,6 +23,10 @@ Hilary.scope('GidgetContainer').register({
             registerModule: {
                 type: 'function',
                 args: ['gidgetModule']
+            },
+            registerModules: {
+                type: 'function',
+                args: ['gidgetModules']
             }
         });
     }

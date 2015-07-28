@@ -1,4 +1,4 @@
-/*! gidget-builder 2015-07-27 */
+/*! gidget-builder 2015-07-28 */
 Hilary.scope("GidgetContainer").register({
     name: "bootstrappers.sammy",
     factory: function() {

@@ -1,11 +1,12 @@
 Hilary.scope('GidgetContainer').register({
     name: 'GidgetCtor',
-    dependencies: ['IGidgetModule', 'GidgetModule', 'GidgetRoute', 'GidgetApp', 'locale', 'exceptions'],
-    factory: function (IGidgetModule, GidgetModule, GidgetRoute, GidgetApp, locale, exceptions) {
+    dependencies: ['IGidgetModule', 'GidgetModule', 'GidgetRoute', 'GidgetApp', 'is', 'locale', 'exceptions'],
+    factory: function (IGidgetModule, GidgetModule, GidgetRoute, GidgetApp, is, locale, exceptions) {
         'use strict';
 
         return function (routeEngine, callback) {
             var registerModule,
+                registerModules,
                 gidgetApp;
 
             registerModule = function (gidgetModule) {
@@ -56,11 +57,22 @@ Hilary.scope('GidgetContainer').register({
                 }
             };
 
+            registerModules = function (gidgetModules) {
+                if (is.array(gidgetModules)) {
+                    var i;
+
+                    for (i = 0; i < gidgetModules.length; i += 1) {
+                        registerModule(gidgetModules[i]);
+                    }
+                }
+            };
+
             gidgetApp = new GidgetApp({
                 GidgetModule: GidgetModule,
                 GidgetRoute: GidgetRoute,
                 routeEngine: routeEngine,
-                registerModule: registerModule
+                registerModule: registerModule,
+                registerModules: registerModules
             });
 
             if (typeof callback === 'function') {

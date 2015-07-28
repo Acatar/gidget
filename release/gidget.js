@@ -1,4 +1,4 @@
-/*! gidget-builder 2015-07-27 */
+/*! gidget-builder 2015-07-28 */
 Hilary.scope("GidgetContainer").register({
     name: "ExceptionHandler",
     dependencies: [],
@@ -288,6 +288,10 @@ Hilary.scope("GidgetContainer").register({
             registerModule: {
                 type: "function",
                 args: [ "gidgetModule" ]
+            },
+            registerModules: {
+                type: "function",
+                args: [ "gidgetModules" ]
             }
         });
     }
@@ -316,11 +320,11 @@ Hilary.scope("GidgetContainer").register({
 
 Hilary.scope("GidgetContainer").register({
     name: "GidgetCtor",
-    dependencies: [ "IGidgetModule", "GidgetModule", "GidgetRoute", "GidgetApp", "locale", "exceptions" ],
-    factory: function(IGidgetModule, GidgetModule, GidgetRoute, GidgetApp, locale, exceptions) {
+    dependencies: [ "IGidgetModule", "GidgetModule", "GidgetRoute", "GidgetApp", "is", "locale", "exceptions" ],
+    factory: function(IGidgetModule, GidgetModule, GidgetRoute, GidgetApp, is, locale, exceptions) {
         "use strict";
         return function(routeEngine, callback) {
-            var registerModule, gidgetApp;
+            var registerModule, registerModules, gidgetApp;
             registerModule = function(gidgetModule) {
                 if (!IGidgetModule.syncSignatureMatches(gidgetModule).result) {
                     exceptions.throwNotImplementedException(locale.errors.interfaces.notAnIGidgetModule, IGidgetModule.syncSignatureMatches(gidgetModule).errors);
@@ -353,11 +357,20 @@ Hilary.scope("GidgetContainer").register({
                     }
                 }
             };
+            registerModules = function(gidgetModules) {
+                if (is.array(gidgetModules)) {
+                    var i;
+                    for (i = 0; i < gidgetModules.length; i += 1) {
+                        registerModule(gidgetModules[i]);
+                    }
+                }
+            };
             gidgetApp = new GidgetApp({
                 GidgetModule: GidgetModule,
                 GidgetRoute: GidgetRoute,
                 routeEngine: routeEngine,
-                registerModule: registerModule
+                registerModule: registerModule,
+                registerModules: registerModules
             });
             if (typeof callback === "function") {
                 callback(gidgetApp);
@@ -394,6 +407,12 @@ Hilary.scope("GidgetContainer").register({
             name: "Blueprint",
             factory: function() {
                 return Hilary.Blueprint;
+            }
+        });
+        scope.register({
+            name: "is",
+            factory: function() {
+                return scope.getContext().is;
             }
         });
         scope.register({
