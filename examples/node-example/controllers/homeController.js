@@ -5,7 +5,7 @@ module.exports.factory = function (router) {
 
     /* GET home page. */
     router.get('/', function (req, res) {
-        res.render('index', { title: '<%= projectName %>' });
+        res.render('index', { title: 'node-example' });
     });
 
     return router;

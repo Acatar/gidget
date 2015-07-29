@@ -6,7 +6,7 @@
     /*
     // Orchestrates composition of the application dependency graph
     */
-    compose = function () {
+    compose = function (onReady) {
         var exceptions;
 
         // perform composition tasks (register modules here)
@@ -22,6 +22,8 @@
                     exceptions = new ExceptionHandler(function (exception) {
                         if (exception.data) {
                             console.log(exception.message, exception.data);
+                        } else {
+                            console.log(exception.message);
                         }
 
                         throw exception;
@@ -37,37 +39,41 @@
             blueprint: 'IGidget',
             dependencies: ['IRouteEngine', 'GidgetModule', 'GidgetRoute', 'GidgetApp', 'argumentValidator'],
             factory: function (IRouteEngine, GidgetModule, GidgetRoute, GidgetApp, argumentValidator) {
-                var Gidget = function (options) {
-                    options = options || {};
+                var Gidget = {};
 
-                    if (argumentValidator.validate(IRouteEngine, options.routeEngine)) {
+                Gidget.GidgetModule = GidgetModule;
+                Gidget.GidgetRoute = GidgetRoute;
+                Gidget.init = function (options) {
+                    options = options || {};
+                    options.routeEngine = options.routeEngine || scope.resolve('DefaultRouteEngine');
+
+                    if (!argumentValidator.validate(IRouteEngine, options.routeEngine)) {
                         return;
                     }
 
                     return new GidgetApp(options.routeEngine);
                 };
 
-                Gidget.GidgetModule = GidgetModule;
-                Gidget.GidgetRoute = GidgetRoute;
-
                 return Gidget;
             }
         });
+
+        onReady();
     };
 
     /*
     // Orchestrates startup
     */
     start = function () {
-        compose();
-
         // perform startup tasks (resolve modules here)
-        exports.Gidget = scope.resolve('Gidget');
+        var Gidget = scope.resolve('Gidget');
+
+        exports.Gidget = Gidget;
     };
 
     //////////////////////////////////////////////////
     // START IMMEDIATELY
     // note: we don't use an iffe for start, so it can be registered and the app can be restarted
-    start();
+    compose(start);
 
 }(Hilary, Hilary.scope('gidget'), (typeof module !== 'undefined' && module.exports) ? module.exports : window));

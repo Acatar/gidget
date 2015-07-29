@@ -2,7 +2,8 @@
 module.exports = function (grunt) {
     'use strict';
 
-    var gidgetFiles;
+    var gidgetFiles,
+        nodeFiles;
 
     grunt.loadNpmTasks('grunt-contrib-uglify'); // node
 
@@ -12,7 +13,6 @@ module.exports = function (grunt) {
         '../src/blueprints/IGidgetModule.js',
         '../src/blueprints/IGidgetRoute.js',
         '../src/blueprints/IRouteEngine.js',
-        '../src/blueprints/IRouteEngineBootstrapper.js',
 
         '../src/locale/en_US.js',
 
@@ -21,10 +21,12 @@ module.exports = function (grunt) {
         '../src/GidgetApp.js',
         '../src/GidgetModule.js',
         '../src/GidgetRoute.js',
-        '../src/RouteEngine.js',
-        '../src/RouteEngineBoostrapper.js',
+        '../src/BaseRouteEngine.js',
+        '../src/routeEngines/DefaultRouteEngine.js',
         '../src/Gidget.js'
     ];
+
+    nodeFiles = ['../src/node.begin.js'].concat(gidgetFiles);
 
     // Update the grunt config
     grunt.config.set('uglify', {
@@ -40,6 +42,7 @@ module.exports = function (grunt) {
             },
             files: {
                 '../release/gidget.js': gidgetFiles,
+                '../release/gidget.node.js': nodeFiles
                 // '../release/gidget.bootstrappers.sammy.js': ['../src/bootstrappers.sammy.js']
                 //,'../release/bootstrappers.simrou.js': ['../src/gidget.bootstrappers.simrou.js']
             }
@@ -54,6 +57,7 @@ module.exports = function (grunt) {
             },
             files: {
                 '../release/gidget.min.js': gidgetFiles,
+                '../release/gidget.node.min.js': nodeFiles
                 // '../release/gidget.bootstrappers.sammy.min.js': ['../src/bootstrappers.sammy.js']
                 //,'../release/bootstrappers.simrou.min.js': ['../src/gidget.bootstrappers.simrou.js']
             }

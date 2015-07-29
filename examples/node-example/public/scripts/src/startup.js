@@ -17,17 +17,7 @@
     // compose the application and dependency graph
     */
     compose = function (onReady) {
-        // new Gidget({
-        //     routerName: 'bootstrappers.sammy',
-        //     router: new Sammy(mainSelector, function () { }),
-        //     callback: function (gidgetApp) {
-        //         configureApplicationContainer(gidgetApp);
-        //         configureApplicationLifecycle(gidgetApp.pipelines());
-        //
-        //         // Start handler
-        //         onReady(null, gidgetApp);
-        //     }
-        // });
+        onReady(null, Gidget.init());
     };
 
     /*
@@ -40,7 +30,8 @@
             exceptions,
             is;
 
-        scope.register({ name: 'newGidgetModule',   factory: function () { return new gidget.GidgetModule(); }});
+        scope.register({ name: 'newGidgetModule',   factory: function () { return new Gidget.GidgetModule(); }});
+        scope.register({ name: 'GidgetRoute',   factory: function () { return Gidget.GidgetRoute; }});
         scope.register({ name: 'Blueprint',         factory: function () { return Hilary.Blueprint; }});
 
         scope.register({
@@ -113,15 +104,18 @@
     */
     configureRoutes = function (gidget) {
         gidget.registerModule(scope.resolve('homeController'));
+        gidget.registerModule(scope.resolve('breweriesController'));
     };
 
     /*
     // starts the application
     */
-    start = function (err, gidget) {
-        configureRoutes(gidget);
+    start = function (err, gidgetApp) {
+        configureApplicationContainer(gidgetApp);
+        configureApplicationLifecycle(gidgetApp.pipelines);
+        configureRoutes(gidgetApp);
         ko.applyBindings(scope.resolve('viewEngine').mainVM, $main[0]);
-        gidget.routeEngine.start();
+        gidgetApp.start();
     };
 
     //////////////////////////////////////////////////

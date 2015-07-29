@@ -25,10 +25,7 @@ Hilary.scope("gidget").register({
         "use strict";
         return new Blueprint({
             __blueprintId: "IGidgetApp",
-            start: {
-                type: "function",
-                args: [ "err", "callback" ]
-            },
+            start: "function",
             pipelines: "object",
             registerModule: {
                 type: "function",
@@ -95,7 +92,7 @@ Hilary.scope("gidget").register({
             },
             navigate: {
                 type: "function",
-                args: [ "path", "pushStateToHistory" ]
+                args: [ "path", "data", "pushStateToHistory" ]
             },
             before: {
                 type: "function",
@@ -105,44 +102,10 @@ Hilary.scope("gidget").register({
                 type: "function",
                 args: [ "callback" ]
             },
-            start: {
+            start: "function",
+            resolveRoute: {
                 type: "function",
-                args: [ "callback" ]
-            }
-        });
-    }
-});
-
-Hilary.scope("gidget").register({
-    name: "IRouteEngineBootstrapper",
-    dependencies: [ "Blueprint" ],
-    factory: function(Blueprint) {
-        "use strict";
-        return new Blueprint({
-            __blueprintId: "IRouteEngine",
-            get: {
-                type: "function",
-                args: [ "path", "callback" ]
-            },
-            post: {
-                type: "function",
-                args: [ "path", "callback" ]
-            },
-            put: {
-                type: "function",
-                args: [ "path", "callback" ]
-            },
-            del: {
-                type: "function",
-                args: [ "path", "callback" ]
-            },
-            navigate: {
-                type: "function",
-                args: [ "path", "pushStateToHistory" ]
-            },
-            start: {
-                type: "function",
-                args: [ "callback" ]
+                args: [ "path" ]
             }
         });
     }
@@ -173,13 +136,13 @@ Hilary.scope("gidget").register({
         "use strict";
         return {
             validate: function(blueprint, argument) {
-                var isValid = blueprint.syncValidateSignature(argument), i;
+                var isValid = blueprint.syncSignatureMatches(argument), i;
                 if (isValid.result) {
+                    return true;
+                } else {
                     for (i = 0; i < isValid.errors.length; i += 1) {
                         exceptions.throwArgumentException(isValid.errors[i]);
                     }
-                    return true;
-                } else {
                     return isValid;
                 }
             }
@@ -270,7 +233,7 @@ Hilary.scope("gidget").register({
         var GidgetApp = function(routeEngine) {
             var self = {
                 start: undefined,
-                pipelines: undefined,
+                pipelines: {},
                 registerModule: undefined,
                 registerModules: undefined
             };
@@ -336,15 +299,12 @@ Hilary.scope("gidget").register({
 
 Hilary.scope("gidget").register({
     name: "GidgetRoute",
-    dependencies: [ "IGidgetRoute" ],
-    factory: function(IGidgetRoute) {
+    dependencies: [ "IGidgetRoute", "argumentValidator" ],
+    factory: function(IGidgetRoute, argumentValidator) {
         "use strict";
         return function(route) {
-            if (!route) {
-                throw new Error("GidgetRoute does not have a parameterless constructor");
-            }
-            if (typeof route.routeHandler !== "function") {
-                throw new Error("A routeHandler function is required when creating a new GidgetRoute");
+            if (!argumentValidator.validate(IGidgetRoute, route)) {
+                return;
             }
             var self = route.routeHandler;
             if (typeof route.before === "function") {
@@ -359,25 +319,24 @@ Hilary.scope("gidget").register({
 });
 
 Hilary.scope("gidget").register({
-    name: "RouteEngine",
-    dependencies: [ "IRouteEngineBootstrapper", "argumentValidator", "is", "locale", "exceptions" ],
-    factory: function(IRouteEngineBootstrapper, argumentValidator, is, locale, exceptions) {
+    name: "BaseRouteEngine",
+    dependencies: [ "is", "locale", "exceptions" ],
+    factory: function(is, locale, exceptions) {
         "use strict";
         var RouteEngine = function(router) {
-            var self, regularExpressions, routes = [], pipelineEvents, executePipeline, addRoute, parseRoute, parseParams, getHash;
-            if (!argumentValidator.valdate(IRouteEngineBootstrapper, router)) {
-                return;
-            }
+            var self, regularExpressions, routes = [], pipelineEvents, executePipeline, addRoute, parseRoute, parseParams;
+            router = router || {};
             self = {
                 get: router.get,
                 post: router.post,
                 put: router.put,
                 del: router.del,
-                navigate: undefined,
+                navigate: router.navigate,
                 before: router.before,
                 after: router.after,
                 executeBeforePipeline: undefined,
                 executeAfterPipeline: undefined,
+                resolveRoute: undefined,
                 start: router.start
             };
             regularExpressions = {
@@ -399,13 +358,13 @@ Hilary.scope("gidget").register({
                 }
             };
             addRoute = function(verb, path, callback) {
-                var newCallback, route, params;
+                var newCallback, route;
                 if (is.not.defined(path) || is.not.function(callback)) {
                     exceptions.throwArgumentException(locale.errors.requiresArguments.replace("{func}", "addRoute").replace("{args}", "(verb, path, callback)"));
                 }
                 route = parseRoute(path);
-                newCallback = function(context) {
-                    var proceed = true, params = parseParams(path, context.params);
+                newCallback = function(params) {
+                    var proceed = true;
                     if (is.function(callback.before)) {
                         proceed = callback.before(params);
                     }
@@ -457,20 +416,31 @@ Hilary.scope("gidget").register({
                     pattern: pattern
                 };
             };
-            parseParams = function(path, params) {
-                if (typeof path === "string") {
-                    var paramNames = path.match(/:([^\/]*)/g), i;
-                    if (paramNames === null || paramNames.length < 1) {
-                        return params;
-                    }
-                    for (i = 0; i < paramNames.length; i += 1) {
-                        params[paramNames[i].replace(/:/g, "")] = params.splat[i];
-                    }
+            parseParams = function(path, route) {
+                var params = {}, matches, i;
+                matches = path.match(route.expression);
+                if (is.not.array(matches) || matches.length === 1) {
+                    params.splat = [];
+                    return params;
+                }
+                matches.shift();
+                params.splat = matches;
+                for (i = 0; i < route.params.length; i += 1) {
+                    params[route.params[i].replace(/:/g, "")] = params.splat[i];
                 }
                 return params;
             };
-            getHash = function() {
-                return String(location.hash).replace(regularExpressions.extractHash, "$1");
+            self.get = self.get || function(path, callback) {
+                return addRoute("get", path, callback);
+            };
+            self.post = self.post || function(path, callback) {
+                return addRoute("post", path, callback);
+            };
+            self.put = self.put || function(path, callback) {
+                return addRoute("put", path, callback);
+            };
+            self.del = self.del || function(path, callback) {
+                return addRoute("del", path, callback);
             };
             self.before = self.before || function(callback) {
                 if (typeof callback === "function") {
@@ -488,17 +458,95 @@ Hilary.scope("gidget").register({
             self.executeAfterPipeline = function(verb, path, params, event) {
                 executePipeline(pipelineEvents.after, verb, path, params, event);
             };
-            self.navigate = function(path, pushStateToHistory) {};
+            self.resolveRoute = function(path) {
+                var i, matchingRoute;
+                for (i = 0; i < routes.length; i += 1) {
+                    if (routes[i].route.expression.test(path)) {
+                        matchingRoute = routes[i];
+                        break;
+                    }
+                }
+                if (matchingRoute) {
+                    matchingRoute.params = parseParams(path, matchingRoute.route);
+                    return matchingRoute;
+                } else {
+                    return false;
+                }
+            };
             return self;
         };
         return RouteEngine;
     }
 });
 
+(function(Hilary, history) {
+    "use strict";
+    Hilary.scope("gidget").register({
+        name: "DefaultRouteEngine",
+        dependencies: [ "BaseRouteEngine", "is" ],
+        factory: function(RouteEngine, is) {
+            var start, onLoad, addEventListeners, routeEngine;
+            start = function() {
+                addEventListeners();
+                onLoad();
+            };
+            onLoad = function() {
+                routeEngine.navigate(location.href);
+            };
+            addEventListeners = function() {
+                document.addEventListener("click", function(event) {
+                    if (is.string(event.target.localName) && event.target.localName === "a") {
+                        event.preventDefault();
+                        routeEngine.navigate(event.target.href);
+                    }
+                }, false);
+                window.addEventListener("popstate", function(event) {
+                    if (is.string(event.state)) {
+                        event.preventDefault();
+                        routeEngine.navigate(event.state, null, false);
+                    } else if (is.object(event.state) && is.defined(event.state.path)) {
+                        event.preventDefault();
+                        routeEngine.navigate(event.state.path);
+                    }
+                }, false);
+            };
+            routeEngine = new RouteEngine({
+                start: start
+            });
+            routeEngine.navigate = function(path, data, pushStateToHistory) {
+                var state = data || {}, route;
+                if (is.not.defined(pushStateToHistory)) {
+                    pushStateToHistory = true;
+                }
+                if (is.string(path.host) && path.host === document.location.host) {
+                    state.path = path;
+                    state.relativePath = path.pathname + path.search + path.hash;
+                    state.title = window.title;
+                } else if (is.string(path) && path.replace(window.location.origin, "").indexOf("http") === -1) {
+                    state.path = path;
+                    state.relativePath = path.replace(window.location.origin, "");
+                    state.title = window.title;
+                } else {
+                    window.location = path;
+                    return;
+                }
+                if (pushStateToHistory) {
+                    history.pushState(state.path, state.title, state.relativePath);
+                }
+                route = routeEngine.resolveRoute(state.relativePath);
+                if (is.function(route.callback)) {
+                    route.callback(route.params);
+                }
+            };
+            return routeEngine;
+        }
+    });
+})(Hilary, window.history);
+
 (function(Hilary, scope, exports) {
     "use strict";
     var compose, start;
-    compose = function() {
+    compose = function(onReady) {
         var exceptions;
         scope.register({
             name: "application",
@@ -529,6 +577,8 @@ Hilary.scope("gidget").register({
                     exceptions = new ExceptionHandler(function(exception) {
                         if (exception.data) {
                             console.log(exception.message, exception.data);
+                        } else {
+                            console.log(exception.message);
                         }
                         throw exception;
                     });
@@ -541,22 +591,25 @@ Hilary.scope("gidget").register({
             blueprint: "IGidget",
             dependencies: [ "IRouteEngine", "GidgetModule", "GidgetRoute", "GidgetApp", "argumentValidator" ],
             factory: function(IRouteEngine, GidgetModule, GidgetRoute, GidgetApp, argumentValidator) {
-                var Gidget = function(options) {
+                var Gidget = {};
+                Gidget.GidgetModule = GidgetModule;
+                Gidget.GidgetRoute = GidgetRoute;
+                Gidget.init = function(options) {
                     options = options || {};
-                    if (argumentValidator.validate(IRouteEngine, options.routeEngine)) {
+                    options.routeEngine = options.routeEngine || scope.resolve("DefaultRouteEngine");
+                    if (!argumentValidator.validate(IRouteEngine, options.routeEngine)) {
                         return;
                     }
                     return new GidgetApp(options.routeEngine);
                 };
-                Gidget.GidgetModule = GidgetModule;
-                Gidget.GidgetRoute = GidgetRoute;
                 return Gidget;
             }
         });
+        onReady();
     };
     start = function() {
-        compose();
-        exports.Gidget = scope.resolve("Gidget");
+        var Gidget = scope.resolve("Gidget");
+        exports.Gidget = Gidget;
     };
-    start();
+    compose(start);
 })(Hilary, Hilary.scope("gidget"), typeof module !== "undefined" && module.exports ? module.exports : window);

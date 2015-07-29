@@ -6,10 +6,7 @@ Hilary.scope('gidget').register({
 
         return new Blueprint({
             __blueprintId: 'IGidgetApp',
-            start: {
-                type: 'function',
-                args: ['err', 'callback']
-            },
+            start: 'function',
             pipelines: 'object',
             registerModule: {
                 type: 'function',

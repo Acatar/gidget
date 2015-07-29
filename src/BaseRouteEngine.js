@@ -1,7 +1,7 @@
 Hilary.scope('gidget').register({
-    name: 'RouteEngine',
-    dependencies: ['IRouteEngineBootstrapper', 'argumentValidator', 'is', 'locale', 'exceptions'],
-    factory: function (IRouteEngineBootstrapper, argumentValidator, is, locale, exceptions) {
+    name: 'BaseRouteEngine',
+    dependencies: ['is', 'locale', 'exceptions'],
+    factory: function (is, locale, exceptions) {
         'use strict';
 
         var RouteEngine = function (router) {
@@ -12,23 +12,22 @@ Hilary.scope('gidget').register({
             executePipeline,
             addRoute,
             parseRoute,
-            parseParams,
-            getHash;
+            parseParams;
 
-            if (!argumentValidator.valdate(IRouteEngineBootstrapper, router)) {
-                return;
-            }
+            router = router || {};
 
             self = {
                 get: router.get,
                 post: router.post,
                 put: router.put,
                 del: router.del,
-                navigate: undefined,
+                navigate: router.navigate,
                 before: router.before,
                 after: router.after,
                 executeBeforePipeline: undefined,
                 executeAfterPipeline: undefined,
+                parseRoute: undefined,
+                resolveRoute: undefined,
                 start: router.start
             };
 
@@ -55,8 +54,7 @@ Hilary.scope('gidget').register({
 
             addRoute = function (verb, path, callback) {
                 var newCallback,
-                    route,
-                    params;
+                    route;
 
                 if (is.not.defined(path) || is.not.function(callback)) {
                     exceptions.throwArgumentException(locale.errors.requiresArguments.replace('{func}', 'addRoute').replace('{args}', '(verb, path, callback)'));
@@ -64,9 +62,8 @@ Hilary.scope('gidget').register({
 
                 route = parseRoute(path);
 
-                newCallback = function (context) {
-                    var proceed = true,
-                        params = parseParams(path, context.params);
+                newCallback = function (params) {
+                    var proceed = true;
 
                     if (is.function(callback.before)) {
                         proceed = callback.before(params);
@@ -142,25 +139,42 @@ Hilary.scope('gidget').register({
                 };
             };
 
-            parseParams = function (path, params) {
-                if (typeof path === 'string') {
-                    var paramNames = path.match(/:([^\/]*)/g),
-                        i;
+            parseParams = function (path, route) {
+                var params = {},
+                    matches,
+                    i;
 
-                    if (paramNames === null || paramNames.length < 1) {
-                        return params;
-                    }
+                matches = path.match(route.expression);
 
-                    for (i = 0; i < paramNames.length; i += 1) {
-                        params[paramNames[i].replace(/:/g, '')] = params.splat[i];
-                    }
+                if (is.not.array(matches) || matches.length === 1) {
+                    params.splat = [];
+                    return params;
+                }
+
+                matches.shift();
+                params.splat = matches;
+
+                for (i = 0; i < route.params.length; i += 1) {
+                    params[route.params[i].replace(/:/g, '')] = params.splat[i];
                 }
 
                 return params;
             };
 
-            getHash = function () {
-                return String(location.hash).replace(regularExpressions.extractHash, '$1');
+            self.get = self.get || function (path, callback) {
+                return addRoute('get', path, callback);
+            };
+
+            self.post = self.post || function (path, callback) {
+                return addRoute('post', path, callback);
+            };
+
+            self.put = self.put || function (path, callback) {
+                return addRoute('put', path, callback);
+            };
+
+            self.del = self.del || function (path, callback) {
+                return addRoute('del', path, callback);
             };
 
             self.before = self.before || function (callback) {
@@ -183,8 +197,25 @@ Hilary.scope('gidget').register({
                 executePipeline(pipelineEvents.after, verb, path, params, event);
             };
 
-            self.navigate = function (path, pushStateToHistory) {
-                // router.navigate
+            self.parseRoute = parseRoute;
+
+            self.resolveRoute = function (path) {
+                var i,
+                    matchingRoute;
+
+                for (i = 0; i < routes.length; i += 1) {
+                    if (routes[i].route.expression.test(path)) {
+                        matchingRoute = routes[i];
+                        break;
+                    }
+                }
+
+                if (matchingRoute) {
+                    matchingRoute.params = parseParams(path, matchingRoute.route);
+                    return matchingRoute;
+                } else {
+                    return false;
+                }
             };
 
             return self;

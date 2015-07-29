@@ -7,7 +7,7 @@ Hilary.scope('gidget').register({
         var GidgetApp = function (routeEngine) {
             var self = {
                 start: undefined,
-                pipelines: undefined,
+                pipelines: {},
                 registerModule: undefined,
                 registerModules: undefined
             };

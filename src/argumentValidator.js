@@ -6,15 +6,15 @@ Hilary.scope('gidget').register({
 
         return {
             validate: function (blueprint, argument) {
-                var isValid = blueprint.syncValidateSignature(argument),
+                var isValid = blueprint.syncSignatureMatches(argument),
                     i;
 
                 if (isValid.result) {
+                    return true;
+                } else {
                     for (i = 0; i < isValid.errors.length; i += 1) {
                         exceptions.throwArgumentException(isValid.errors[i]);
                     }
-                    return true;
-                } else {
                     return isValid;
                 }
             }

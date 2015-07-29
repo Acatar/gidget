@@ -1,11 +1,10 @@
 Hilary.scope('node-example').register({
     name: 'homeController',
     dependencies: ['newGidgetModule', 'locale', 'viewEngine'],
-    factory: function ($this, locale, viewEngine) {
+    factory: function (self, locale, viewEngine) {
         'use strict';
 
         var getExample1,
-            getHomepage,
             logLifecycle;
 
         logLifecycle = function (message, verb, path, params) {
@@ -16,8 +15,7 @@ Hilary.scope('node-example').register({
             });
         };
 
-        // Multiple routes covered by the same route handler
-        getHomepage = function () {
+        self.get['/'] = function () {
             viewEngine.setVM({
                 template: 't-empty',
                 data: {
@@ -29,8 +27,6 @@ Hilary.scope('node-example').register({
                 }
             });
         };
-        $this.get['/#/'] = getHomepage;
-        $this.get['/'] = getHomepage;
 
         // Single route with `before` and `after` pipelines
         getExample1 = function () {
@@ -38,7 +34,7 @@ Hilary.scope('node-example').register({
                 template: 't-empty',
                 data: {
                     heading: locale.pages.home.empty.heading,
-                    body: '/#/example1'
+                    body: '/example1'
                 }
             });
         };
@@ -48,19 +44,19 @@ Hilary.scope('node-example').register({
         getExample1.after = function (verb, path, params) {
             logLifecycle('after example 1 route', verb, path, params);
         };
-        $this.get['/#/example1'] = getExample1;
+        self.get['/example1'] = getExample1;
 
         // Single route handler for a route
-        $this.get['/#/example2'] = function () {
+        self.get['/example2'] = function () {
             viewEngine.setVM({
                 template: 't-empty',
                 data: {
                     heading: locale.pages.home.empty.heading,
-                    body: '/#/example2'
+                    body: '/example2'
                 }
             });
         };
 
-        return $this;
+        return self;
     }
 });

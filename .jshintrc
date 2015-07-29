@@ -94,6 +94,7 @@
         "jQuery": false,
         "mocha": false,
         "Sammy": false,
-        "Gidget": false
+        "Gidget": false,
+        "modules": false
     }
 }

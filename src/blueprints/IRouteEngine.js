@@ -24,7 +24,7 @@ Hilary.scope('gidget').register({
             },
             navigate: {
                 type: 'function',
-                args: ['path', 'pushStateToHistory']
+                args: ['path', 'data', 'pushStateToHistory']
             },
             before: {
                 type: 'function',
@@ -34,9 +34,10 @@ Hilary.scope('gidget').register({
                 type: 'function',
                 args: ['callback']
             },
-            start: {
+            start: 'function',
+            resolveRoute: {
                 type: 'function',
-                args: ['callback']
+                args: ['path']
             }
         });
     }
