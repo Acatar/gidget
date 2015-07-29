@@ -553,13 +553,19 @@ Hilary.scope("gidget").register({
     factory: function(is) {
         "use strict";
         var Bootstrapper = function(scope, bootstrapper) {
-            var self = {
+            var _scope, _bootstrapper, self = {
                 compose: undefined,
                 start: undefined,
                 configureRoutes: undefined,
                 configureApplicationContainer: undefined,
                 configureApplicationLifecycle: undefined
             };
+            if (is.defined(scope) && scope.register) {
+                _scope = scope;
+            } else {
+                _bootstrapper = scope;
+            }
+            bootstrapper = _bootstrapper || bootstrapper || {};
             bootstrapper = bootstrapper || {};
             self.compose = function(onReady) {
                 if (is.function(bootstrapper.compose)) {
@@ -578,18 +584,20 @@ Hilary.scope("gidget").register({
                 gidgetApp.start();
             };
             self.configureApplicationContainer = function(gidgetApp) {
-                scope.register({
-                    name: "application",
-                    factory: function() {
-                        return {
-                            compose: self.compose,
-                            start: self.start,
-                            restart: function() {
-                                self.compose(self.start);
-                            }
-                        };
-                    }
-                });
+                if (_scope) {
+                    _scope.register({
+                        name: "application",
+                        factory: function() {
+                            return {
+                                compose: self.compose,
+                                start: self.start,
+                                restart: function() {
+                                    self.compose(self.start);
+                                }
+                            };
+                        }
+                    });
+                }
                 if (is.function(bootstrapper.configureApplicationContainer)) {
                     bootstrapper.configureApplicationContainer(gidgetApp);
                 }

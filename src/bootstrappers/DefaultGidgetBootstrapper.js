@@ -5,13 +5,23 @@ Hilary.scope('gidget').register({
         'use strict';
 
         var Bootstrapper = function (scope, bootstrapper) {
-            var self = {
+            var _scope,
+                _bootstrapper,
+                self = {
                 compose: undefined,
                 start: undefined,
                 configureRoutes: undefined,
                 configureApplicationContainer: undefined,
                 configureApplicationLifecycle: undefined
             };
+
+            if (is.defined(scope) && scope.register) {
+                _scope = scope;
+            } else {
+                _bootstrapper = scope;
+            }
+
+            bootstrapper = _bootstrapper || bootstrapper || {};
 
             bootstrapper = bootstrapper || {};
 
@@ -45,18 +55,20 @@ Hilary.scope('gidget').register({
             // Configure the IoC container - register singleton dependencies and what not
             */
             self.configureApplicationContainer = function (gidgetApp) {
-                scope.register({
-                    name: 'application',
-                    factory: function () {
-                        return {
-                            compose: self.compose,
-                            start: self.start,
-                            restart: function () {
-                                self.compose(self.start);
-                            }
-                        };
-                    }
-                });
+                if (_scope) {
+                    _scope.register({
+                        name: 'application',
+                        factory: function () {
+                            return {
+                                compose: self.compose,
+                                start: self.start,
+                                restart: function () {
+                                    self.compose(self.start);
+                                }
+                            };
+                        }
+                    });
+                }
 
                 if (is.function(bootstrapper.configureApplicationContainer)) {
                     bootstrapper.configureApplicationContainer(gidgetApp);
