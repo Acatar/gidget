@@ -1,15 +1,12 @@
-Hilary.scope('GidgetContainer').register({
+Hilary.scope('gidget').register({
     name: 'GidgetRoute',
-    factory: function () {
+    dependencies: ['IGidgetRoute', 'argumentValidator'],
+    factory: function (IGidgetRoute, argumentValidator) {
         'use strict';
 
         return function (route) {
-            if (!route) {
-                throw new Error('GidgetRoute does not have a parameterless constructor');
-            }
-
-            if (typeof route.routeHandler !== 'function') {
-                throw new Error('A routeHandler function is required when creating a new GidgetRoute');
+            if (!argumentValidator.validate(IGidgetRoute, route)) {
+                return;
             }
 
             var self = route.routeHandler;

@@ -1,234 +1,70 @@
-# Gidget
+Gidget
+==========
+
 A Domain Service Language (DSL) for JavaScript SPAs and Node.js servers inspired by NancyFx and Sinatra
 
-## Router Dependencies
-Gidget is not itself a route engine. It requires that you bootstrap it with one. At the moment, only sammy is supported, but bootrappers are simple to write, so it can be used with others, like simrou, or express.
+## Getting started
 
-## Getting Started with Gidget and Sammy
-First, install jQuery, sammy, hilary and gidget.
+You can install Gidget with bower, or download the js files from the release directory.
 
-You can download the resources, or just install them with bower:
-
-```
-bower install --save jquery
-bower install --save sammy
-bower install --save hilary
-bower install --save gidget
+```Shell
+$ bower install --save gidget
 ```
 
-In your markup, add the following:
+Gidget depends on [Hilary](https://github.com/Acatar/hilaryjs), so you'll need to add two script tags to your DOM.
+
 ```HTML
-<div id="main"></div>
-
-<script type="text/javascript" src=".../jquery.min.js"></script>
-<script type="text/javascript" src=".../sammy.min.js"></script>
-<script type="text/javascript" src=".../hilary.min.js"></script>
-<script type="text/javascript" src=".../gidget.min.js"></script>
-<script type="text/javascript" src=".../gidget.bootstrappers.sammy.min.js"></script>
+<script src="/bower_components/hilary/release/hilary.min.js"></script>
+<script src="/bower_components/gidget/release/gidget.min.js"></script>
 ```
 
-We're going to follow the composition root pattern in standing up our route engine. If you're not familiar with that, check out http://blog.ploeh.dk/2011/07/28/CompositionRoot/.
+### Gidget Modules
+Let's start by creating a controller. We do this by creating instances of ``GidgetModule``.
 
-First let's create a route module/controller:
 ```JavaScript
-Hilary.scope('myWebApp').register({
-    name: 'homeController',
-    dependencies: ['GidgetModule', 'jQuery'],
-    factory: function (GidgetModule, $) {
-        "use strict";
+var controller = new GidgetModule();
 
-        var self = new GidgetModule();
-
-        self.get['/sammy_hilary'] = function (params) {
-            var html = '<h1>Gidget with the Sammy Bootstrapper and hilary</h1>'
-                    + '<p>This example uses the Gidget DSL with Sammy.js for routing and hilary as the IoC Container</p>';
-
-            $('#main').html(html);
-        };
-
-        self.get['/sammy_hilary/#/example1'] = function (params) {
-            $('#main').html('<h1>/sammy_hilary/#/example1</h1>');
-        };
-
-        self.get['/sammy_hilary/#/example2'] = function (params) {
-            $('#main').html('<h1>/sammy_hilary/#/example2</h1>');
-        };
-
-        return self;
-    }
-});
-```
-
-And how about another route module/controller - this time one that supports parameters and has a lifecycle:
-```JavaScript
-Hilary.scope('myWebApp').register({
-    name: 'breweriesController',
-    dependencies: ['GidgetModule', 'GidgetRoute', 'jQuery'],
-    factory: function (GidgetModule, GidgetRoute, $) {
-        'use strict';
-
-        var self = new GidgetModule(),
-            paramsToHtml,
-            logLifecycle,
-            getBrewery,
-            getBeer;
-
-        paramsToHtml = function (params) {
-            var html = '',
-                i,
-                prop;
-
-            for (prop in params) {
-                if (params.hasOwnProperty(prop) && prop !== 'splat') {
-                    html += '<p>params.' + prop + ' = ' + params[prop] + '</p>';
-                }
-            }
-
-            if (params.splat) {
-                for (i = 0; i < params.splat.length; i += 1) {
-                    html += '<p>params.splat[' + i.toString() + '] = ' + params.splat[i] + '</p>';
-                }
-            }
-
-            return html;
-        };
-
-        logLifecycle = function (message, verb, path, params) {
-            console.log(message, {
-                verb: verb,
-                path: path,
-                params: params
-            });
-        };
-
-        getBrewery = new GidgetRoute({
-            routeHandler: function (params) {
-                $('#main').html('<h1>/sammy_hilary/#/breweries/:brewery</h1>' + paramsToHtml(params));
-            },
-            before: function (verb, path, params) {
-                logLifecycle('before breweries route', verb, path, params);
-            },
-            after: function (verb, path, params) {
-                logLifecycle('after breweries route', verb, path, params);
-            }
-        });
-
-        getBeer = function (params) {
-            $('#main').html('<h1>/sammy_hilary/#/breweries/:brewery/beers/:beer</h1>' + paramsToHtml(params));
-        };
-
-        self.get['/sammy_hilary/#/breweries/:brewery'] = getBrewery;
-        self.get['/sammy_hilary/#/breweries/:brewery/beers/:beer'] = getBeer;
-
-        return self;
-    }
-});
-```
-
-OK, now that we have some controllers, let's start the app:
-```JavaScript
-(function (scope, $, Sammy, Gidget) {
-    "use strict";
-
-    var compose, configureRoutes, configureApplicationContainer;
-
-    /*
-    // compose the application and dependency graph
-    */
-    compose = function (onReady) {
-        var gidget = new Gidget({
-            routerName: 'bootstrappers.sammy',
-            router: new Sammy('#main', function () {}),
-            callback: function (gidgetApp) {
-                configureApplicationContainer(gidgetApp);
-
-                // Start handler
-                configureRoutes(gidgetApp);
-                gidgetApp.routeEngine.start();
-            }
-        });
-    };
-
-    /*
-    // Configure the IoC container - register singleton dependencies and what not
-    */
-    configureApplicationContainer = function (gidget) {
-        scope.register({
-            name: 'GidgetModule',
-            factory: function () {
-                return gidget.GidgetModule;
-            }
-        });
-    };
-
-    /*
-    // Register Modules
-    */
-    configureRoutes = function (gidget) {
-        gidget.registerModule(scope.resolve('homeController'));
-        gidget.registerModule(scope.resolve('breweriesController'));
-    };
-
-    // START
-    compose();
-
-}(Hilary.scope('myWebApp'), jQuery, Sammy, Gidget));
-```
-
-Great. Now let's take advantage of the application lifecycle. We're going to add before and after handlers to log our actions out to the console:
-```JavaScript
-configureApplicationLifecycle = function (pipelines) {
-    pipelines.before(function (verb, path, params) {
-        console.log('about to navigate to:', { verb: verb, path: path, params: params });
-    });
-
-    pipelines.after(function (verb, path, params) {
-        console.log('finished navigating to:', { verb: verb, path: path, params: params });
-    });
+controller.get['/'] = function (params) {
+    console.log('Home');
 };
 ```
 
-When we're done, it should look like this:
+Gidget has built in support for parameters:
+
 ```JavaScript
-(function (scope, $, Sammy, Gidget) {
-    "use strict";
+var controller = new GidgetModule();
 
-    var compose, configureRoutes, configureApplicationContainer, configureApplicationLifecycle;
+controller.get['/breweries/:brewery/beers/:beer'] = function (params) {
+    console.log('Brewery', params.brewery);
+    console.log('Beer', params.beer);
+};
+```
 
-    /*
-    // compose the application and dependency graph
-    */
-    compose = function (onReady) {
-        var gidget = new Gidget({
-            routerName: 'bootstrappers.sammy',
-            router: new Sammy('#main', function () {}),
-            callback: function (gidgetApp) {
-                configureApplicationContainer(gidgetApp);
-                configureApplicationLifecycle(gidgetApp.pipelines());
+### Starting Gidget (the Bootstrapper)
+Gidget has a built in Bootstrapper to help you get started. You don't have to use it, but it's the easiest way to get started.
 
-                // Start handler
-                configureRoutes(gidgetApp);
-                gidgetApp.routeEngine.start();
-            }
-        });
-    };
+```JavaScript
+Gidget.Bootstrapper({
+    start: function (gidgetApp) {
+        // perform any startup tasks such as binding your DOM
+    },
+    configureRoutes: function (gidgetApp) {
+        // add your controllers
+        // usually you would not define the controllers // here. you would merely register them
+        var controller = new GidgetModule();
 
-    /*
-    // Configure the IoC container - register singleton dependencies and what not
-    */
-    configureApplicationContainer = function (gidget) {
-        scope.register({
-            name: 'GidgetModule',
-            factory: function () {
-                return gidget.GidgetModule;
-            }
-        });
-    };
+        controller.get['/'] = function (params) {
+            console.log('Home');
+        };
 
-    /*
-    // Register application lifecycle pipeline events
-    */
-    configureApplicationLifecycle = function (pipelines) {
+        controller.get['/breweries/:brewery/beers/:beer'] = function (params) {
+            console.log('Brewery', params.brewery);
+            console.log('Beer', params.beer);
+        };
+
+        gidgetApp.registerModule(controller);
+    },
+    configureApplicationLifecycle: function (gidetApp, pipelines) {
         pipelines.before(function (verb, path, params) {
             console.log('about to navigate to:', { verb: verb, path: path, params: params });
         });
@@ -236,28 +72,59 @@ When we're done, it should look like this:
         pipelines.after(function (verb, path, params) {
             console.log('finished navigating to:', { verb: verb, path: path, params: params });
         });
-    };
-
-    /*
-    // Register Modules
-    */
-    configureRoutes = function (gidget) {
-        gidget.registerModule(scope.resolve('homeController'));
-        gidget.registerModule(scope.resolve('breweriesController'));
-    };
-
-    // START
-    compose();
-
-}(Hilary.scope('myWebApp'), jQuery, Sammy, Gidget));
+    }
+});
 ```
 
-When we run this app, we should be able to navigate to the following routes and see the result:
+If you are composing your application using Hilary, there are some additional features you can take advantage of. Note that in this example, we pass our Hilary scope into the Bootstrapper as the first argument.
+
+```JavaScript
+var scope = Hilary.scope('myScope');
+
+Gidget.Bootstrapper(scope, {
+    // ommited for brevity
+    // start: ...
+    // configureRoutes: ...
+    // configureApplicationLifecycle: ...
+    configureApplicationContainer: function (gidgetApp) {
+        scope.register({
+            name: 'example',
+            factory: function () {
+                console.log('example');
+            }
+        });
+    }
+});
 ```
-/sammy_hilary/#/example1
-/sammy_hilary/#/example2
-/sammy_hilary/#/breweries/straub
-/sammy_hilary/#/breweries/straub/beers/light
-/sammy_hilary/#/breweries/straub/beers/lager
-/sammy_hilary/#/breweries/straub/beers/amber
+
+Finally, if you are using a different RouteEngine, you can override the compose behavior:
+
+```JavaScript
+var scope = Hilary.scope('myScope');
+
+Gidget.Bootstrapper(scope, {
+    // ommited for brevity
+    // start: ...
+    // configureRoutes: ...
+    // configureApplicationLifecycle: ...
+    // configureApplicationContainer: ...
+    compose: function (onReady) {
+        var gidget;
+
+        try {
+            gidget = new Gidget({
+                routeEngine: myRouteEngine()
+            });
+
+            onReady(null, gidget);
+        } catch (e) {
+            onReady('Whoops!');
+        }
+    }
+});
 ```
+
+
+
+## Router Dependencies
+Gidget has a simple route engine that supports ``post``, ``put``, ``get``, and ``del``. Gidget can also be bootstrapped with a different route engine, such as Sammy.

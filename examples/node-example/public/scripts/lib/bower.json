@@ -1,0 +1,19 @@
+{
+  "name": "<%= projectName %>-lib",
+  "version": "0.0.0",
+  "description": "external client-js dependencies for <%= projectName %>",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "hilary": "~3.1.9",
+    "gidget": "~0.0.10",
+    "fetch": "~0.9.0",
+    "es6-promise": "~2.2.0",
+    "sammy": "~0.7.0"
+  }
+}

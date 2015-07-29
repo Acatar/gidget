@@ -1,4 +1,6 @@
 /*! gidget-builder 2015-07-29 */
+var Hilary = require("hilary");
+
 Hilary.scope("gidget").register({
     name: "IGidget",
     dependencies: [ "Blueprint" ],

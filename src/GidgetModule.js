@@ -1,5 +1,6 @@
-Hilary.scope('GidgetContainer').register({
+Hilary.scope('gidget').register({
     name: 'GidgetModule',
+    dependencies: [],
     factory: function () {
         'use strict';
 

@@ -1,48 +1,34 @@
-(function (exports, scope, Hilary) {
+(function (Hilary, scope, exports) {
     'use strict';
 
     var compose, start;
 
-    compose = function () {
-        var locale = scope.resolve('locale::en_US'),
-            exceptions;
+    /*
+    // Orchestrates composition of the application dependency graph
+    */
+    compose = function (onReady) {
+        var exceptions;
 
-        scope.register({
-            name: 'locale',
-            factory: function () {
-                return locale;
-            }
-        });
-
-        scope.register({
-            name: 'Blueprint',
-            factory: function () {
-                return Hilary.Blueprint;
-            }
-        });
-
-        scope.register({
-            name: 'is',
-            factory: function () {
-                return scope.getContext().is;
-            }
-        });
+        // perform composition tasks (register modules here)
+        scope.register({ name: 'application', factory: function () { return { compose: compose, start: start }; } });
+        scope.register({ name: 'Blueprint', factory: function () { return Hilary.Blueprint; } });
+        scope.register({ name: 'is', factory: function () { return scope.getContext().is; } });
 
         scope.register({
             name: 'exceptions',
             dependencies: ['ExceptionHandler'],
             factory: function (ExceptionHandler) {
-                if (exceptions) {
-                    return exceptions;
+                if (!exceptions) {
+                    exceptions = new ExceptionHandler(function (exception) {
+                        if (exception.data) {
+                            console.log(exception.message, exception.data);
+                        } else {
+                            console.log(exception.message);
+                        }
+
+                        throw exception;
+                    });
                 }
-
-                exceptions = new ExceptionHandler(function (exception) {
-                    if (exception.data) {
-                        console.log(exception.message, exception.data);
-                    }
-
-                    throw exception;
-                });
 
                 return exceptions;
             }
@@ -50,40 +36,44 @@
 
         scope.register({
             name: 'Gidget',
-            dependencies: ['RouteEngine', 'GidgetCtor', 'IOptions', 'exceptions', 'locale'],
-            factory: function (RouteEngine, GidgetCtor, IOptions, exceptions, locale) {
-                return function (options) {
-                    var self = {},
-                        optionsAreValid,
-                        router;
+            blueprint: 'IGidget',
+            dependencies: ['IRouteEngine', 'GidgetModule', 'GidgetRoute', 'DefaultGidgetBootstrapper', 'GidgetApp', 'argumentValidator'],
+            factory: function (IRouteEngine, GidgetModule, GidgetRoute, DefaultGidgetBootstrapper, GidgetApp, argumentValidator) {
+                var Gidget = function (options) {
+                    options = options || {};
+                    options.routeEngine = options.routeEngine || scope.resolve('DefaultRouteEngine');
 
-                    optionsAreValid = IOptions.syncSignatureMatches(options);
-
-                    if (!optionsAreValid.result) {
-                        exceptions.throwNotImplementedException(locale.errors.interfaces.missingOptions);
+                    if (!argumentValidator.validate(IRouteEngine, options.routeEngine)) {
                         return;
                     }
 
-                    router = scope.resolve(options.routerName);
-
-                    router.compose(RouteEngine, options, function (routeEngine) {
-                        self = new GidgetCtor(routeEngine, options.callback);
-
-                        return self;
-                    });
-
-                    return self;
+                    return new GidgetApp(options.routeEngine);
                 };
+
+                Gidget.GidgetModule = GidgetModule;
+                Gidget.GidgetRoute = GidgetRoute;
+                Gidget.Bootstrapper = DefaultGidgetBootstrapper;
+
+                return Gidget;
             }
         });
 
-        start();
+        onReady();
     };
 
+    /*
+    // Orchestrates startup
+    */
     start = function () {
-        exports.Gidget = scope.resolve('Gidget');
+        // perform startup tasks (resolve modules here)
+        var Gidget = scope.resolve('Gidget');
+
+        exports.Gidget = Gidget;
     };
 
+    //////////////////////////////////////////////////
+    // START IMMEDIATELY
+    // note: we don't use an iffe for start, so it can be registered and the app can be restarted
     compose(start);
 
-}((typeof module !== 'undefined' && module.exports) ? module.exports : window, Hilary.scope('GidgetContainer'), Hilary));
+}(Hilary, Hilary.scope('gidget'), (typeof module !== 'undefined' && module.exports) ? module.exports : window));

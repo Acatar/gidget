@@ -1,9 +1,10 @@
 {
   "name": "gidget-solution",
-  "version": "0.0.10",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
-      "start": "node build & nodemon ./examples/node-web/bin/www"
+      "start": "node build & nodemon ./examples/node-web/bin/www",
+      "install-dependencies": "cd build; npm install; cd ../tests; npm install; cd browser; bower install; cd ../../examples/node-example; npm run install-dependencies"
   },
   "dependencies": {
       "fs-extra": "0.14.x",
