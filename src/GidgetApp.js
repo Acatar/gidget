@@ -1,38 +1,74 @@
-Hilary.scope('GidgetContainer').register({
+Hilary.scope('gidget').register({
     name: 'GidgetApp',
-    dependencies: ['IGidgetApp', 'locale', 'exceptions'],
-    factory: function (IGidgetApp, locale, exceptions) {
+    dependencies: ['IGidgetModule', 'argumentValidator', 'is'],
+    factory: function (IGidgetModule, argumentValidator, is) {
         'use strict';
 
-        return function (components) {
-            components = components || {};
-
-            components.pipelines = function () {
-                return {
-                    before: components.routeEngine.before,
-                    after: components.routeEngine.after
-                };
+        var GidgetApp = function (routeEngine) {
+            var self = {
+                start: undefined,
+                pipelines: undefined,
+                registerModule: undefined,
+                registerModules: undefined
             };
 
-            if (!IGidgetApp.syncSignatureMatches(components).result) {
-                exceptions.throwNotImplementedException(locale.errors.interfaces.requiresImplementation, IGidgetApp.syncSignatureMatches(components).errors);
-            }
+            self.start = routeEngine.start;
 
-            /*
-            //    components.registerModule: register a module (i.e. a controller)
-            //    @param gidgetModule: an instance of GidgetModule
-            //
-            //    i.e.
-            //      var myModule = new gidget.GidgetModule();
-            //
-            //      myModule.get['/beers/:id'] = function (params, event) {
-            //          // show beer
-            //      }
-            //
-            //      gidget.registerModule(myModule);
-            */
+            self.pipelines.before = routeEngine.before;
+            self.pipelines.after = routeEngine.after;
 
-            return components;
+            self.registerModule = function (gidgetModule) {
+                if (!argumentValidator.validate(IGidgetModule, gidgetModule)) {
+                    return;
+                }
+
+                var gets = gidgetModule.get,
+                    puts = gidgetModule.put,
+                    posts = gidgetModule.posts,
+                    dels = gidgetModule.dels,
+                    get,
+                    put,
+                    post,
+                    del;
+
+                for (get in gets) {
+                    if (gets.hasOwnProperty(get)) {
+                        routeEngine.get(get, gets[get]);
+                    }
+                }
+
+                for (put in puts) {
+                    if (puts.hasOwnProperty(put)) {
+                        routeEngine.put(put, puts[put]);
+                    }
+                }
+
+                for (post in posts) {
+                    if (posts.hasOwnProperty(post)) {
+                        routeEngine.post(post, posts[post]);
+                    }
+                }
+
+                for (del in dels) {
+                    if (dels.hasOwnProperty(del)) {
+                        routeEngine.del(del, dels[del]);
+                    }
+                }
+            };
+
+            self.registerModules = function (gidgetModules) {
+                if (is.array(gidgetModules)) {
+                    var i;
+
+                    for (i = 0; i < gidgetModules.length; i += 1) {
+                        self.registerModule(gidgetModules[i]);
+                    }
+                }
+            };
+
+            return self;
         };
+
+        return GidgetApp;
     }
 });

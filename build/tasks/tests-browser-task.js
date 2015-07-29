@@ -12,16 +12,15 @@ module.exports = function (grunt) {
             basePath: '../',
             frameworks: ['mocha', 'chai'],
             files: [
-                'test/browser/bower_components/jquery/dist/jquery.min.js',
-                'test/browser/bower_components/hilary/release/hilary.js',
-                'test/browser/test.setup.js',
+                'tests/browser/bower_components/jquery/dist/jquery.min.js',
+                'tests/browser/bower_components/hilary/release/hilary.js',
                 // gidget
                 'release/gidget.min.js',
-                'release/gidget.bootstrappers.sammy.min.js',
+                // 'release/gidget.bootstrappers.sammy.min.js',
                 // specs
-                { pattern: 'test/browser/*.fixture.js', included: true, served: true },
+                { pattern: 'tests/browser/*.fixture.js', included: true, served: true },
                 // runner
-                'test/browser/test.js'
+                'tests/browser/test.js'
             ],
             reporters: ['nyan'],
             reportSlowerThan: 2000,

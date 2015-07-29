@@ -1,4 +1,4 @@
-Hilary.scope('gidget').register({
+Hilary.scope('node-example').register({
     name: 'ExceptionHandler',
     dependencies: [],
     factory: function (onError) {

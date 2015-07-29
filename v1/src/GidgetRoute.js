@@ -1,7 +1,6 @@
-Hilary.scope('gidget').register({
+Hilary.scope('GidgetContainer').register({
     name: 'GidgetRoute',
-    dependencies: ['IGidgetRoute'],
-    factory: function (IGidgetRoute) {
+    factory: function () {
         'use strict';
 
         return function (route) {
