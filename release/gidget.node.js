@@ -338,6 +338,7 @@ Hilary.scope("gidget").register({
                 after: router.after,
                 executeBeforePipeline: undefined,
                 executeAfterPipeline: undefined,
+                parseRoute: undefined,
                 resolveRoute: undefined,
                 start: router.start
             };
@@ -460,6 +461,7 @@ Hilary.scope("gidget").register({
             self.executeAfterPipeline = function(verb, path, params, event) {
                 executePipeline(pipelineEvents.after, verb, path, params, event);
             };
+            self.parseRoute = parseRoute;
             self.resolveRoute = function(path) {
                 var i, matchingRoute;
                 for (i = 0; i < routes.length; i += 1) {
@@ -545,6 +547,70 @@ Hilary.scope("gidget").register({
     });
 })(Hilary, window.history);
 
+Hilary.scope("gidget").register({
+    name: "DefaultGidgetBootstrapper",
+    dependencies: [ "is" ],
+    factory: function(is) {
+        "use strict";
+        var Bootstrapper = function(scope, bootstrapper) {
+            var self = {
+                compose: undefined,
+                start: undefined,
+                configureRoutes: undefined,
+                configureApplicationContainer: undefined,
+                configureApplicationLifecycle: undefined
+            };
+            bootstrapper = bootstrapper || {};
+            self.compose = function(onReady) {
+                if (is.function(bootstrapper.compose)) {
+                    bootstrapper.compose(onReady);
+                } else {
+                    onReady(null, new Gidget());
+                }
+            };
+            self.start = function(err, gidgetApp) {
+                self.configureApplicationContainer(gidgetApp);
+                self.configureApplicationLifecycle(gidgetApp, gidgetApp.pipelines);
+                self.configureRoutes(gidgetApp);
+                if (is.function(bootstrapper.start)) {
+                    bootstrapper.start(err, gidgetApp);
+                }
+                gidgetApp.start();
+            };
+            self.configureApplicationContainer = function(gidgetApp) {
+                scope.register({
+                    name: "application",
+                    factory: function() {
+                        return {
+                            compose: self.compose,
+                            start: self.start,
+                            restart: function() {
+                                self.compose(self.start);
+                            }
+                        };
+                    }
+                });
+                if (is.function(bootstrapper.configureApplicationContainer)) {
+                    bootstrapper.configureApplicationContainer(gidgetApp);
+                }
+            };
+            self.configureApplicationLifecycle = function(gidgetApp, pipelines) {
+                if (is.function(bootstrapper.configureApplicationLifecycle)) {
+                    bootstrapper.configureApplicationLifecycle(gidgetApp, pipelines);
+                }
+            };
+            self.configureRoutes = function(gidgetApp) {
+                if (is.function(bootstrapper.configureRoutes)) {
+                    bootstrapper.configureRoutes(gidgetApp);
+                }
+            };
+            self.compose(self.start);
+            return self;
+        };
+        return Bootstrapper;
+    }
+});
+
 (function(Hilary, scope, exports) {
     "use strict";
     var compose, start;
@@ -591,12 +657,9 @@ Hilary.scope("gidget").register({
         scope.register({
             name: "Gidget",
             blueprint: "IGidget",
-            dependencies: [ "IRouteEngine", "GidgetModule", "GidgetRoute", "GidgetApp", "argumentValidator" ],
-            factory: function(IRouteEngine, GidgetModule, GidgetRoute, GidgetApp, argumentValidator) {
-                var Gidget = {};
-                Gidget.GidgetModule = GidgetModule;
-                Gidget.GidgetRoute = GidgetRoute;
-                Gidget.init = function(options) {
+            dependencies: [ "IRouteEngine", "GidgetModule", "GidgetRoute", "DefaultGidgetBootstrapper", "GidgetApp", "argumentValidator" ],
+            factory: function(IRouteEngine, GidgetModule, GidgetRoute, DefaultGidgetBootstrapper, GidgetApp, argumentValidator) {
+                var Gidget = function(options) {
                     options = options || {};
                     options.routeEngine = options.routeEngine || scope.resolve("DefaultRouteEngine");
                     if (!argumentValidator.validate(IRouteEngine, options.routeEngine)) {
@@ -604,6 +667,9 @@ Hilary.scope("gidget").register({
                     }
                     return new GidgetApp(options.routeEngine);
                 };
+                Gidget.GidgetModule = GidgetModule;
+                Gidget.GidgetRoute = GidgetRoute;
+                Gidget.Bootstrapper = DefaultGidgetBootstrapper;
                 return Gidget;
             }
         });

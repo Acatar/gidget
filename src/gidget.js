@@ -37,13 +37,9 @@
         scope.register({
             name: 'Gidget',
             blueprint: 'IGidget',
-            dependencies: ['IRouteEngine', 'GidgetModule', 'GidgetRoute', 'GidgetApp', 'argumentValidator'],
-            factory: function (IRouteEngine, GidgetModule, GidgetRoute, GidgetApp, argumentValidator) {
-                var Gidget = {};
-
-                Gidget.GidgetModule = GidgetModule;
-                Gidget.GidgetRoute = GidgetRoute;
-                Gidget.init = function (options) {
+            dependencies: ['IRouteEngine', 'GidgetModule', 'GidgetRoute', 'DefaultGidgetBootstrapper', 'GidgetApp', 'argumentValidator'],
+            factory: function (IRouteEngine, GidgetModule, GidgetRoute, DefaultGidgetBootstrapper, GidgetApp, argumentValidator) {
+                var Gidget = function (options) {
                     options = options || {};
                     options.routeEngine = options.routeEngine || scope.resolve('DefaultRouteEngine');
 
@@ -53,6 +49,10 @@
 
                     return new GidgetApp(options.routeEngine);
                 };
+
+                Gidget.GidgetModule = GidgetModule;
+                Gidget.GidgetRoute = GidgetRoute;
+                Gidget.Bootstrapper = DefaultGidgetBootstrapper;
 
                 return Gidget;
             }

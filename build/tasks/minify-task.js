@@ -23,7 +23,8 @@ module.exports = function (grunt) {
         '../src/GidgetRoute.js',
         '../src/BaseRouteEngine.js',
         '../src/routeEngines/DefaultRouteEngine.js',
-        '../src/Gidget.js'
+        '../src/bootstrappers/DefaultGidgetBootstrapper.js',
+        '../src/Gidget.js',
     ];
 
     nodeFiles = ['../src/node.begin.js'].concat(gidgetFiles);
