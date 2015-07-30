@@ -56,6 +56,9 @@ Hilary.scope('gidget').register({
             */
             self.configureApplicationContainer = function (gidgetApp) {
                 if (_scope) {
+                    _scope.register({ name: 'gidgetApp', factory: function () { return gidgetApp; }});
+                    _scope.register({ name: 'gidgetRouter', factory: function () { return gidgetApp.routeEngine; }});
+
                     _scope.register({
                         name: 'application',
                         factory: function () {

@@ -13,6 +13,7 @@ Hilary.scope('gidget').register({
             };
 
             self.start = routeEngine.start;
+            self.routeEngine = routeEngine;
 
             self.pipelines.before = routeEngine.before;
             self.pipelines.after = routeEngine.after;
