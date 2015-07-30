@@ -22,7 +22,7 @@ Gidget depends on [Hilary](https://github.com/Acatar/hilaryjs), so you'll need t
 Let's start by creating a controller. We do this by creating instances of ``GidgetModule``.
 
 ```JavaScript
-var controller = new GidgetModule();
+var controller = new Gidget.GidgetModule();
 
 controller.get['/'] = function (params) {
     console.log('Home');
@@ -32,12 +32,31 @@ controller.get['/'] = function (params) {
 Gidget has built in support for parameters:
 
 ```JavaScript
-var controller = new GidgetModule();
+var controller = new Gidget.GidgetModule();
 
 controller.get['/breweries/:brewery/beers/:beer'] = function (params) {
     console.log('Brewery', params.brewery);
     console.log('Beer', params.beer);
 };
+```
+
+If you want to add pipeline events to a given route, it's easiest to do this with a ``GidgetRoute``.
+
+```JavaScript
+var controller = new Gidget.GidgetModule();
+
+controller.get['/breweries/:brewery/beers/:beer'] = new Gidget.GidgetRoute({
+    routeHandler: function (params) {
+        console.log('Brewery', params.brewery);
+        console.log('Beer', params.beer);
+    },
+    before: function (params) {
+        console.log('before beer', params);
+    },
+    after: function (params) {
+        console.log('after beer', params);
+    }
+});
 ```
 
 ### Starting Gidget (the Bootstrapper)
@@ -51,7 +70,7 @@ Gidget.Bootstrapper({
     configureRoutes: function (gidgetApp) {
         // add your controllers
         // usually you would not define the controllers // here. you would merely register them
-        var controller = new GidgetModule();
+        var controller = new Gidget.GidgetModule();
 
         controller.get['/'] = function (params) {
             console.log('Home');
