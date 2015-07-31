@@ -26,6 +26,14 @@ Hilary.scope('gidget').register({
                 type: 'function',
                 args: ['path', 'data', 'pushStateToHistory']
             },
+            beforeRouteResolution: {
+                type: 'function',
+                args: ['callback']
+            },
+            afterRouteResolution: {
+                type: 'function',
+                args: ['callback']
+            },
             before: {
                 type: 'function',
                 args: ['callback']
@@ -34,8 +42,16 @@ Hilary.scope('gidget').register({
                 type: 'function',
                 args: ['callback']
             },
+            onError: {
+                type: 'function',
+                args: ['callback']
+            },
             start: 'function',
             resolveRoute: {
+                type: 'function',
+                args: ['path']
+            },
+            resolveAndExecuteRoute: {
                 type: 'function',
                 args: ['path']
             }

@@ -43,8 +43,7 @@
                 start: start
             });
             routeEngine.navigate = function (path, data, pushStateToHistory) {
-                var state = data || {},
-                    route;
+                var state = data || {};
 
                 if (is.not.defined(pushStateToHistory)) {
                     pushStateToHistory = true;
@@ -68,11 +67,7 @@
                     history.pushState(state.path, state.title, state.relativePath);
                 }
 
-                route = routeEngine.resolveRoute(state.relativePath);
-
-                if (is.function(route.callback)) {
-                    route.callback(route.params);
-                }
+                routeEngine.resolveAndExecuteRoute(state.relativePath);
             };
 
             return routeEngine;

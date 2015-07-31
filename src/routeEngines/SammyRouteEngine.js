@@ -1,13 +1,12 @@
 Hilary.scope('gidget').register({
     name: 'SammyRouteEngine',
-    dependencies: ['BaseRouteEngine', 'is', 'locale', 'exceptions'],
-    factory: function (RouteEngine, is, locale, exceptions) {
+    dependencies: ['BaseRouteEngine'],
+    factory: function (RouteEngine) {
         'use strict';
 
         var SammyRouteEngine = function (sammyInstance) {
             var sammy = sammyInstance,
                 routeEngine,
-                baseAddRoute,
                 addRoute;
 
             routeEngine = new RouteEngine({
@@ -15,51 +14,6 @@ Hilary.scope('gidget').register({
                     sammy.run();
                 }
             });
-
-            baseAddRoute = function (verb, path, callback) {
-                var newCallback,
-                    route;
-
-                if (is.not.defined(path) || is.not.function(callback)) {
-                    exceptions.throwArgumentException(locale.errors.requiresArguments.replace('{func}', 'addRoute').replace('{args}', '(verb, path, callback)'));
-                }
-
-                route = routeEngine.parseRoute(path);
-
-                newCallback = function (params) {
-                    var proceed = true;
-
-                    if (is.function(callback.before)) {
-                        proceed = callback.before(params);
-                    }
-
-                    if (proceed === false) {
-                        return;
-                    }
-
-                    routeEngine.executeBeforePipeline(verb, path, params);
-                    proceed = callback(params);
-
-                    if (proceed === false) {
-                        return;
-                    }
-
-                    if (is.function(callback.after)) {
-                        proceed = callback.after(params);
-                    }
-
-                    if (proceed === false) {
-                        return;
-                    }
-
-                    routeEngine.executeAfterPipeline(verb, path, params);
-                };
-
-                return {
-                    route: route,
-                    callback: newCallback
-                };
-            };
 
             addRoute = function (verb, path, callback) {
                 var baseRoute = routeEngine.addRoute(verb, path, callback);

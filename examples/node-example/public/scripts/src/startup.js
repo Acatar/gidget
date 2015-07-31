@@ -72,12 +72,28 @@
             });
         },
         configureApplicationLifecycle: function (gidgetApp, pipelines) {
-            pipelines.before(function (verb, path, params) {
-                console.log('about to navigate to:', { verb: verb, path: path, params: params });
+            pipelines.beforeRouteResolution(function (err, path, next) {
+                console.log('about to resolve the route to:', path);
+                next(null, path);
             });
 
-            pipelines.after(function (verb, path, params) {
-                console.log('finished navigating to:', { verb: verb, path: path, params: params });
+            pipelines.afterRouteResolution(function (err, route, next) {
+                console.log('finished resolving route:', route);
+                next(null, route);
+            });
+
+            pipelines.before(function (err, context, next) {
+                console.log('about to navigate to:', context);
+                next(null, context);
+            });
+
+            pipelines.after(function (err, context, next) {
+                console.log('finished navigating to to:', context);
+                next(null, context);
+            });
+
+            pipelines.onError(function (err) {
+                console.log('Gidget Error:', err);
             });
         },
         configureRoutes: function (gidget) {

@@ -3,6 +3,7 @@ Hilary.scope('gidget').register({
     factory: {
         errors: {
             requiresArguments: 'The {func} function requires arguments {args}',
+            status404: 'Not Found!',
             interfaces: {
                 requiresImplementation: 'A valid implementation is required to create a new instance of an interface',
                 requiresProperty: 'The implementation is missing a required property: ',

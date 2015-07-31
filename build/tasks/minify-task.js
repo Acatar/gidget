@@ -19,11 +19,13 @@ module.exports = function (grunt) {
         '../src/argumentValidator.js',
         '../src/ExceptionHandler.js',
         '../src/GidgetApp.js',
+        '../src/GidgetContext.js',
         '../src/GidgetModule.js',
         '../src/GidgetRoute.js',
         '../src/BaseRouteEngine.js',
         '../src/routeEngines/DefaultRouteEngine.js',
         '../src/bootstrappers/DefaultGidgetBootstrapper.js',
+        '../src/Route.js',
         '../src/Gidget.js',
     ];
 
