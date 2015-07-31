@@ -3,8 +3,8 @@
 
     testScope.register({
         name: 'gidget.blueprint.fixture',
-        dependencies: ['describe', 'it', 'expect'],
-        factory: function (describe, it, expect) {
+        dependencies: ['gidgetScope', 'describe', 'it', 'expect'],
+        factory: function (gidgetScope, describe, it, expect) {
 
             describe('Blueprints in gidget', function () {
 
@@ -22,25 +22,56 @@
                         expect(actual.result).to.equal(true);
                     });
 
-                });
+                }); // /declared blueprints
 
-                // describe('when a GidgetModule is created', function () {
-                //
-                //     it('should implement IGidgetModule', function () {
-                //         // given
-                //         var IGidgetModule = scope.resolve('IGidgetModule'),
-                //             GidgetModule = scope.resolve('GidgetModule'),
-                //             modl = new GidgetModule(),
-                //             actual;
-                //
-                //         // when
-                //         actual = IGidgetModule.syncSignatureMatches(modl);
-                //
-                //         // then
-                //         expect(actual.result).to.equal(true);
-                //     });
-                //
-                // });
+                describe('Gidget, on the window', function () {
+
+                    it('should implement IGidget', function (done) {
+                        // given
+                        var IGidget = gidgetScope.resolve('IGidget');
+
+                        // when
+                        IGidget.signatureMatches(Gidget, function (err, actual) {
+                            // then
+                            expect(err).to.equal(null);
+                            expect(actual).to.equal(true);
+                            done();
+                        });
+                    });
+
+                }); // /on window
+
+                describe('when a new Gidget instance is created', function () {
+
+                    it('should return an object that implements IGidgetApp', function (done) {
+                        // given
+                        var gidget = new Gidget(),
+                            IGidgetApp = gidgetScope.resolve('IGidgetApp');
+
+                        // when
+                        IGidgetApp.signatureMatches(gidget, function (err, actual) {
+                            // then
+                            expect(err).to.equal(null);
+                            expect(actual).to.equal(true);
+                            done();
+                        });
+                    });
+
+                    it('should have a routeEngine that implements IRouteEngine on it', function (done) {
+                        // given
+                        var gidget = new Gidget(),
+                            IRouteEngine = gidgetScope.resolve('IRouteEngine');
+
+                        // when
+                        IRouteEngine.signatureMatches(gidget.routeEngine, function (err, actual) {
+                            // then
+                            expect(err).to.equal(null);
+                            expect(actual).to.equal(true);
+                            done();
+                        });
+                    });
+
+                }); // /new Gidget instances
 
             }); // /Blueprints in gidget
 

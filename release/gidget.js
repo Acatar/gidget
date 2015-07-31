@@ -6,13 +6,14 @@ Hilary.scope("gidget").register({
         "use strict";
         return new Blueprint({
             __blueprintId: "IGidget",
-            GidgetModule: {
-                type: "function",
-                args: [ "path", "callback" ]
-            },
+            GidgetModule: "function",
             GidgetRoute: {
                 type: "function",
                 args: [ "route" ]
+            },
+            Bootstrapper: {
+                type: "function",
+                args: [ "scope", "bootstrapper" ]
             }
         });
     }
@@ -123,7 +124,8 @@ Hilary.scope("gidget").register({
             resolveAndExecuteRoute: {
                 type: "function",
                 args: [ "path" ]
-            }
+            },
+            dispose: "function"
         });
     }
 });
@@ -582,7 +584,7 @@ Hilary.scope("gidget").register({
                 if (tasks.length) {
                     tasks[0](err, response);
                 } else {
-                    next(null, response);
+                    next(err, response);
                 }
             };
             executeAfterPipeline = function(err, response) {
@@ -667,7 +669,7 @@ Hilary.scope("gidget").register({
         name: "DefaultRouteEngine",
         dependencies: [ "BaseRouteEngine", "is" ],
         factory: function(RouteEngine, is) {
-            var start, onLoad, addEventListeners, routeEngine;
+            var start, onLoad, addEventListeners, clickHandler, popstateHandler, routeEngine;
             start = function() {
                 addEventListeners();
                 onLoad();
@@ -675,22 +677,24 @@ Hilary.scope("gidget").register({
             onLoad = function() {
                 routeEngine.navigate(location.href);
             };
+            clickHandler = function(event) {
+                if (is.string(event.target.localName) && event.target.localName === "a") {
+                    event.preventDefault();
+                    routeEngine.navigate(event.target.href);
+                }
+            };
+            popstateHandler = function(event) {
+                if (is.string(event.state)) {
+                    event.preventDefault();
+                    routeEngine.navigate(event.state, null, false);
+                } else if (is.object(event.state) && is.defined(event.state.path)) {
+                    event.preventDefault();
+                    routeEngine.navigate(event.state.path);
+                }
+            };
             addEventListeners = function() {
-                document.addEventListener("click", function(event) {
-                    if (is.string(event.target.localName) && event.target.localName === "a") {
-                        event.preventDefault();
-                        routeEngine.navigate(event.target.href);
-                    }
-                }, false);
-                window.addEventListener("popstate", function(event) {
-                    if (is.string(event.state)) {
-                        event.preventDefault();
-                        routeEngine.navigate(event.state, null, false);
-                    } else if (is.object(event.state) && is.defined(event.state.path)) {
-                        event.preventDefault();
-                        routeEngine.navigate(event.state.path);
-                    }
-                }, false);
+                document.addEventListener("click", clickHandler, false);
+                window.addEventListener("popstate", popstateHandler, false);
             };
             routeEngine = new RouteEngine({
                 start: start
@@ -716,6 +720,10 @@ Hilary.scope("gidget").register({
                     history.pushState(state.path, state.title, state.relativePath);
                 }
                 routeEngine.resolveAndExecuteRoute(state.relativePath);
+            };
+            routeEngine.dispose = function() {
+                document.removeEventListener("click", clickHandler, false);
+                window.removeEventListener("popstate", popstateHandler, false);
             };
             return routeEngine;
         }

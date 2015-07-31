@@ -307,7 +307,7 @@ Hilary.scope('gidget').register({
                 if (tasks.length) {
                     tasks[0](err, response);
                 } else {
-                    next(null, response);
+                    next(err, response);
                 }
             };
 

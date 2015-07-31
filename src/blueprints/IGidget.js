@@ -6,13 +6,14 @@ Hilary.scope('gidget').register({
 
         return new Blueprint({
             __blueprintId: 'IGidget',
-            GidgetModule: {
-                type: 'function',
-                args: ['path', 'callback']
-            },
+            GidgetModule: 'function',
             GidgetRoute: {
                 type: 'function',
                 args: ['route']
+            },
+            Bootstrapper: {
+                type: 'function',
+                args: ['scope', 'bootstrapper']
             }
         });
     }

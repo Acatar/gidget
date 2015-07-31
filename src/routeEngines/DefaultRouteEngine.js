@@ -9,6 +9,8 @@
             var start,
                 onLoad,
                 addEventListeners,
+                clickHandler,
+                popstateHandler,
                 routeEngine;
 
             start = function () {
@@ -20,23 +22,26 @@
                 routeEngine.navigate(location.href);
             };
 
-            addEventListeners = function () {
-                document.addEventListener('click', function (event) {
-                    if (is.string(event.target.localName) && event.target.localName === 'a') {
-                        event.preventDefault();
-                        routeEngine.navigate(event.target.href);
-                    }
-                }, false);
+            clickHandler = function (event) {
+                if (is.string(event.target.localName) && event.target.localName === 'a') {
+                    event.preventDefault();
+                    routeEngine.navigate(event.target.href);
+                }
+            };
 
-                window.addEventListener('popstate', function (event) {
-                    if (is.string(event.state)) {
-                        event.preventDefault();
-                        routeEngine.navigate(event.state, null, false);
-                    } else if (is.object(event.state) && is.defined(event.state.path)) {
-                        event.preventDefault();
-                        routeEngine.navigate(event.state.path);
-                    }
-                }, false);
+            popstateHandler = function (event) {
+                if (is.string(event.state)) {
+                    event.preventDefault();
+                    routeEngine.navigate(event.state, null, false);
+                } else if (is.object(event.state) && is.defined(event.state.path)) {
+                    event.preventDefault();
+                    routeEngine.navigate(event.state.path);
+                }
+            };
+
+            addEventListeners = function () {
+                document.addEventListener('click', clickHandler, false);
+                window.addEventListener('popstate', popstateHandler, false);
             };
 
             routeEngine = new RouteEngine({
@@ -68,6 +73,11 @@
                 }
 
                 routeEngine.resolveAndExecuteRoute(state.relativePath);
+            };
+
+            routeEngine.dispose = function () {
+                document.removeEventListener('click', clickHandler, false);
+                window.removeEventListener('popstate', popstateHandler, false);                
             };
 
             return routeEngine;

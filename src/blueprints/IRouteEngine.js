@@ -54,7 +54,8 @@ Hilary.scope('gidget').register({
             resolveAndExecuteRoute: {
                 type: 'function',
                 args: ['path']
-            }
+            },
+            dispose: 'function'
         });
     }
 });
