@@ -12,8 +12,8 @@ Hilary.scope('gidget').register({
             self.expression = new RegExp('^' + route.expressionString + '\/?$', flags);
             self.expressionString = route.expressionString;
             self.paramNames = route.paramNames;
-            self.params = route.params;
-            self.path = String(route.path);
+            self.source = String(route.source);
+            self.verb = route.verb;
         };
     }
 });
