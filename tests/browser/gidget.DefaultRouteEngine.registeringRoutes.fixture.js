@@ -6,7 +6,7 @@ Hilary.scope('gidget-tests').register({
 
         var makeSut = function (scope, ops) {
             Gidget.Bootstrapper(scope, {
-                configureRoutes: function (gidgetApp) {
+                composeRoutes: function (err, gidgetApp) {
                     if (ops.configureRoutes) {
                         ops.configureRoutes(gidgetApp);
                     }

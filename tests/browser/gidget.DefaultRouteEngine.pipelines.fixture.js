@@ -8,21 +8,21 @@ Hilary.scope('gidget-tests').register({
 
             var makeSut = function (scope, ops) {
                 Gidget.Bootstrapper(scope, {
-                    configureRoutes: function (gidgetApp) {
+                    composeRoutes: function (err, gidgetApp) {
                         var controller = new Gidget.GidgetModule();
 
                         controller.get['/pipelines'] = function () {};
                         controller.get['/pipelines/breweries/:brewery/beers/:beer'] = function () {};
                         controller.get['/pipelines/error'] = function (err, res, next) { next('error!'); };
 
-                        if (ops.configureRoutes) {
-                            ops.configureRoutes(gidgetApp, controller);
+                        if (ops.composeRoutes) {
+                            ops.composeRoutes(gidgetApp, controller);
                         }
 
                         gidgetApp.registerModule(controller);
                     },
-                    configureApplicationLifecycle: function (gidgetApp, pipelines) {
-                        ops.configureApplicationLifecycle(gidgetApp, pipelines);
+                    composeLifecycle: function (err, gidgetApp, pipelines) {
+                        ops.composeLifecycle(err, gidgetApp, pipelines);
                     }
                 });
             };
@@ -35,7 +35,7 @@ Hilary.scope('gidget-tests').register({
                         router;
 
                     makeSut(sutScope, {
-                        configureApplicationLifecycle: function (gidgetApp, pipelines) {
+                        composeLifecycle: function (err, gidgetApp, pipelines) {
                             pipelines.beforeRouteResolution(function (err, path) {
                                 if (path === '/pipelines/sut/beforeRouteResolution') {
                                     expect(path).to.equal('/pipelines/sut/beforeRouteResolution');
@@ -58,13 +58,13 @@ Hilary.scope('gidget-tests').register({
                         router;
 
                     makeSut(sutScope, {
-                        configureRoutes: function (gidgetApp, controller) {
+                        composeRoutes: function (gidgetApp, controller) {
                             controller.get['/pipelines/sut/beforeRouteResolution/affected'] = function () {
                                 gidgetApp.routeEngine.dispose();
                                 done();
                             };
                         },
-                        configureApplicationLifecycle: function (gidgetApp, pipelines) {
+                        composeLifecycle: function (err, gidgetApp, pipelines) {
                             pipelines.beforeRouteResolution(function (err, path, next) {
                                 if (path === '/pipelines/sut/beforeRouteResolution/affect') {
                                     next(null, '/pipelines/sut/beforeRouteResolution/affected');

@@ -15,7 +15,7 @@ module.exports = function (grunt) {
                 'tests/browser/bower_components/jquery/dist/jquery.min.js',
                 'tests/browser/bower_components/hilary/release/hilary.js',
                 // gidget
-                'release/gidget.min.js',
+                'release/gidget.js',
                 // 'release/gidget.bootstrappers.sammy.min.js',
                 // specs
                 { pattern: 'tests/browser/*.fixture.js', included: true, served: true },

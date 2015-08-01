@@ -5,103 +5,119 @@ Hilary.scope('gidget').register({
         'use strict';
 
         var Bootstrapper = function (scope, bootstrapper) {
-            var _scope,
-                _bootstrapper,
-                self = {
-                compose: undefined,
-                start: undefined,
-                configureRoutes: undefined,
-                configureApplicationContainer: undefined,
-                configureApplicationLifecycle: undefined
-            };
+            var start,
+                composeLifecycle,
+                composeModules,
+                composeRoutes,
+                onComposed,
+                onError;
 
-            if (is.defined(scope) && scope.register) {
-                _scope = scope;
-            } else {
-                _bootstrapper = scope;
-            }
-
-            bootstrapper = _bootstrapper || bootstrapper || {};
-
+            scope = scope || new Hilary();
             bootstrapper = bootstrapper || {};
+            bootstrapper.options = bootstrapper.options || {};
+            bootstrapper.hilary = bootstrapper.hilary || {};
 
-            /*
-            // compose the application and dependency graph
-            */
-            self.compose = function (onReady) {
-                if (is.function(bootstrapper.compose)) {
-                    bootstrapper.compose(onReady);
-                } else {
-                    onReady(null, new Gidget());
-                }
+            onError = function (err) {
+                console.log(err);
             };
 
-            /*
-            // starts the application
-            */
-            self.start = function (err, gidgetApp) {
-                self.configureApplicationContainer(gidgetApp);
-                self.configureApplicationLifecycle(gidgetApp, gidgetApp.pipelines);
-                self.configureRoutes(gidgetApp);
-
+            start = function () {
+                // err, scope, gidgetApp
                 if (is.function(bootstrapper.start)) {
-                    bootstrapper.start(err, gidgetApp);
+                    bootstrapper.start(null, composeLifecycle);
+                } else {
+                    composeLifecycle(null, new Gidget(bootstrapper.options));
                 }
-
-                gidgetApp.start();
             };
 
-            /*
-            // Configure the IoC container - register singleton dependencies and what not
-            */
-            self.configureApplicationContainer = function (gidgetApp) {
-                if (_scope) {
-                    _scope.register({ name: 'gidgetApp', factory: function () { return gidgetApp; }});
-                    _scope.register({ name: 'gidgetRouter', factory: function () { return gidgetApp.routeEngine; }});
+            composeLifecycle = function (err, gidgetApp) {
+                if (err) {
+                    onError(err);
+                }
 
-                    _scope.register({
-                        name: 'application',
-                        factory: function () {
-                            return {
-                                compose: self.compose,
-                                start: self.start,
-                                restart: function () {
-                                    self.compose(self.start);
-                                }
-                            };
+                // err, gidgetApp, pipeline, next
+                if (is.function(bootstrapper.composeLifecycle) && bootstrapper.composeLifecycle.length === 4) {
+                    bootstrapper.composeLifecycle(err, gidgetApp, gidgetApp.pipelines, composeModules);
+                } else if (is.function(bootstrapper.composeLifecycle)) {
+                    bootstrapper.composeLifecycle(err, gidgetApp, gidgetApp.pipelines);
+                    composeModules(err, gidgetApp);
+                } else {
+                    composeModules(err, gidgetApp);
+                }
+            };
+
+            composeModules = function (err, gidgetApp) {
+                if (err) {
+                    onError(err);
+                }
+
+                scope.register({ name: 'gidgetApp', factory: function () { return gidgetApp; }});
+                scope.register({ name: 'gidgetRouter', factory: function () { return gidgetApp.routeEngine; }});
+
+                scope.register({
+                    name: 'application',
+                    factory: function () {
+                        return {
+                            restart: function () {
+                                start();
+                            }
+                        };
+                    }
+                });
+
+                // err, gidgetApp, next
+                if (is.function(bootstrapper.composeModules) && bootstrapper.composeModules.length === 3) {
+                    bootstrapper.composeModules(err, gidgetApp, composeRoutes);
+                } else if (is.function(bootstrapper.composeModules)) {
+                    bootstrapper.composeModules(err, gidgetApp);
+                    composeRoutes(err, gidgetApp);
+                } else {
+                    composeRoutes(err, gidgetApp);
+                }
+            };
+
+            composeRoutes = function (err, gidgetApp) {
+                if (err) {
+                    onError(err);
+                }
+
+                // err, gidgetApp, next
+                if (is.function(bootstrapper.composeRoutes) && bootstrapper.composeRoutes.length === 3) {
+                    bootstrapper.composeRoutes(err, gidgetApp, onComposed);
+                } else if (is.function(bootstrapper.composeRoutes)) {
+                    bootstrapper.composeRoutes(err, gidgetApp);
+                    onComposed(err, gidgetApp);
+                } else {
+                    onComposed(err, gidgetApp);
+                }
+            };
+
+            onComposed = function (err, gidgetApp) {
+                if (err) {
+                    onError(scope, err);
+                }
+
+                // err, scope, gidgetApp
+                if (is.function(bootstrapper.onComposed)) {
+                    bootstrapper.onComposed(err, scope, gidgetApp);
+                }
+            };
+
+            if (bootstrapper.options.composeHilary !== false) {
+                scope.Bootstrapper({
+                    composeLifecycle: bootstrapper.hilary.composeLifecycle,
+                    composeModules: bootstrapper.hilary.composeModules,
+                    onComposed: function (err, scope) {
+                        if (is.function(bootstrapper.hilary.onComposed)) {
+                            bootstrapper.hilary.onComposed(err, scope);
                         }
-                    });
-                }
 
-                if (is.function(bootstrapper.configureApplicationContainer)) {
-                    bootstrapper.configureApplicationContainer(gidgetApp);
-                }
-            };
-
-            /*
-            // Register application lifecycle pipeline events
-            */
-            self.configureApplicationLifecycle = function (gidgetApp, pipelines) {
-                if (is.function(bootstrapper.configureApplicationLifecycle)) {
-                    bootstrapper.configureApplicationLifecycle(gidgetApp, pipelines);
-                }
-            };
-
-            /*
-            // Register Modules / Controllers
-            */
-            self.configureRoutes = function (gidgetApp) {
-                if (is.function(bootstrapper.configureRoutes)) {
-                    bootstrapper.configureRoutes(gidgetApp);
-                }
-            };
-
-            //////////////////////////////////////////////////
-            // START IMMEDIATELY
-            // note: we don't use an iffe for start, so it can be registered and the app can be restarted
-            self.compose(self.start);
-
-            return self;
+                        start();
+                    }
+                });
+            } else {
+                start();
+            }
         };
 
         return Bootstrapper;

@@ -1,14 +1,14 @@
 {
     "name": "gidget",
     "main": "release/gidget.min.js",
-    "version": "2.0.0-beta1",
+    "version": "2.0.1",
     "homepage": "https://github.com/Acatar/gidget",
     "authors": [
         "&y <andes.collab@gmail.com> (https://github.com/losandes)"
     ],
     "description": "A Domain Service Language (DSL) for JavaScript SPAs and Node.js servers inspired by NancyFx and Sinatra",
     "dependencies": {
-        "hilary": "~3.1.9"
+        "hilary": "~3.2.1"
     },
     "moduleType": [
         "globals",

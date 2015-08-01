@@ -1,14 +1,12 @@
 {
   "name": "gidget-solution",
-  "version": "2.0.0-beta1",
+  "version": "2.0.1",
   "private": true,
   "scripts": {
-      "start": "node build & nodemon ./examples/node-web/bin/www",
       "install-dependencies": "cd build; npm install; cd ../tests; npm install; cd browser; bower install; cd ../../examples/node-example; npm run install-dependencies"
   },
   "dependencies": {
-      "fs-extra": "0.14.x",
-      "uglify-js": "2.4.x"
+      "hilary": "~3.2.1"
   },
   "repository": {
       "type": "git",
