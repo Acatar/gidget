@@ -15,11 +15,7 @@ Hilary.scope('gidget').register({
             self.start = routeEngine.start;
             self.routeEngine = routeEngine;
 
-            self.pipelines.beforeRouteResolution = routeEngine.beforeRouteResolution;
-            self.pipelines.afterRouteResolution = routeEngine.afterRouteResolution;
-            self.pipelines.before = routeEngine.before;
-            self.pipelines.after = routeEngine.after;
-            self.pipelines.onError = routeEngine.onError;
+            self.pipeline = routeEngine.pipeline;
 
             self.registerModule = function (gidgetModule) {
                 if (!argumentValidator.validate(IGidgetModule, gidgetModule)) {

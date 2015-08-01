@@ -37,9 +37,9 @@ Hilary.scope('gidget').register({
 
                 // err, gidgetApp, pipeline, next
                 if (is.function(bootstrapper.composeLifecycle) && bootstrapper.composeLifecycle.length === 4) {
-                    bootstrapper.composeLifecycle(err, gidgetApp, gidgetApp.pipelines, composeModules);
+                    bootstrapper.composeLifecycle(err, gidgetApp, gidgetApp.pipeline, composeModules);
                 } else if (is.function(bootstrapper.composeLifecycle)) {
-                    bootstrapper.composeLifecycle(err, gidgetApp, gidgetApp.pipelines);
+                    bootstrapper.composeLifecycle(err, gidgetApp, gidgetApp.pipeline);
                     composeModules(err, gidgetApp);
                 } else {
                     composeModules(err, gidgetApp);

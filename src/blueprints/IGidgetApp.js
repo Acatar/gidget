@@ -8,7 +8,7 @@ Hilary.scope('gidget').register({
             __blueprintId: 'IGidgetApp',
             start: 'function',
             routeEngine: 'object',
-            pipelines: 'object',
+            pipeline: 'object',
             registerModule: {
                 type: 'function',
                 args: ['gidgetModule']

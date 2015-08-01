@@ -1,5 +1,5 @@
-/*globals describe, it, chai*/
-(function (exports, scope, gidgetScope, describe, it, expect) {
+/*globals describe, it, xdescribe, xit, chai*/
+(function (exports, scope, gidgetScope, describe, it, xdesibe, xit, expect) {
     'use strict';
 
     var compose, start;
@@ -7,6 +7,8 @@
     compose = function (onReady) {
         scope.register({ name: 'describe', factory: function () { return describe; } });
         scope.register({ name: 'it', factory: function () { return it; } });
+        scope.register({ name: 'xdescribe', factory: function () { return xdescribe; } });
+        scope.register({ name: 'xit', factory: function () { return xit; } });
         scope.register({ name: 'expect', factory: function () { return expect; } });
         scope.register({ name: 'is', factory: function () { return scope.getContext().is; } });
         scope.register({ name: 'gidgetScope', factory: function () { return gidgetScope; } });
@@ -21,10 +23,10 @@
         scope.resolve('gidget.fixture');
         scope.resolve('blueprint.fixture');
         scope.resolve('DefaultRouteEngine.fixture');
-        scope.resolve('pipelines.fixture');
+        scope.resolve('pipeline.fixture');
         scope.resolve('uriHelper.fixture');
     };
 
     compose(start);
 
-}(window, Hilary.scope('gidget-tests'), Hilary.scope('gidget'), describe, it, chai.expect));
+}(window, Hilary.scope('gidget-tests'), Hilary.scope('gidget'), describe, it, xdescribe, xit, chai.expect));

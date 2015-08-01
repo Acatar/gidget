@@ -28,7 +28,7 @@ Hilary.scope("gidget").register({
             __blueprintId: "IGidgetApp",
             start: "function",
             routeEngine: "object",
-            pipelines: "object",
+            pipeline: "object",
             registerModule: {
                 type: "function",
                 args: [ "gidgetModule" ]
@@ -242,11 +242,7 @@ Hilary.scope("gidget").register({
             };
             self.start = routeEngine.start;
             self.routeEngine = routeEngine;
-            self.pipelines.beforeRouteResolution = routeEngine.beforeRouteResolution;
-            self.pipelines.afterRouteResolution = routeEngine.afterRouteResolution;
-            self.pipelines.before = routeEngine.before;
-            self.pipelines.after = routeEngine.after;
-            self.pipelines.onError = routeEngine.onError;
+            self.pipeline = routeEngine.pipeline;
             self.registerModule = function(gidgetModule) {
                 if (!argumentValidator.validate(IGidgetModule, gidgetModule)) {
                     return;
@@ -774,9 +770,9 @@ Hilary.scope("gidget").register({
                     onError(err);
                 }
                 if (is.function(bootstrapper.composeLifecycle) && bootstrapper.composeLifecycle.length === 4) {
-                    bootstrapper.composeLifecycle(err, gidgetApp, gidgetApp.pipelines, composeModules);
+                    bootstrapper.composeLifecycle(err, gidgetApp, gidgetApp.pipeline, composeModules);
                 } else if (is.function(bootstrapper.composeLifecycle)) {
-                    bootstrapper.composeLifecycle(err, gidgetApp, gidgetApp.pipelines);
+                    bootstrapper.composeLifecycle(err, gidgetApp, gidgetApp.pipeline);
                     composeModules(err, gidgetApp);
                 } else {
                     composeModules(err, gidgetApp);
