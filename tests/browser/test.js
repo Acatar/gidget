@@ -18,10 +18,11 @@
     };
 
     start = function () {
-        scope.resolve('gidget.browser.fixture');
-        scope.resolve('gidget.blueprint.fixture');
-        scope.resolve('gidget.DefaultRouteEngine.registeringRoutes.fixture');
-        scope.resolve('gidget.DefaultRouteEngine.pipelines.fixture');
+        scope.resolve('gidget.fixture');
+        scope.resolve('blueprint.fixture');
+        scope.resolve('DefaultRouteEngine.fixture');
+        scope.resolve('pipelines.fixture');
+        scope.resolve('uriHelper.fixture');
     };
 
     compose(start);

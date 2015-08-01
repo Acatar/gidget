@@ -99,7 +99,7 @@ Hilary.scope('gidget').register({
 
                 // err, scope, gidgetApp
                 if (is.function(bootstrapper.onComposed)) {
-                    bootstrapper.onComposed(err, scope, gidgetApp);
+                    bootstrapper.onComposed(err, gidgetApp);
                 }
             };
 

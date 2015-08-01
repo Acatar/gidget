@@ -236,13 +236,13 @@ Hilary.scope('gidget').register({
                     if (response === false) {
                         err = { status: 404, message: locale.errors.status404, uri: uri };
                         pipeline.trigger.on.error(err);
-                    } else if (is.function(response.callback)) {
+                    } else if (is.function(response.route.callback)) {
                         afterThis(response);
                     }
                 };
 
                 afterThis = function (response) {
-                    pipeline.trigger.after.routeResolution(response, response.callback);
+                    pipeline.trigger.after.routeResolution(response, response.route.callback);
                 };
 
                 // RUN

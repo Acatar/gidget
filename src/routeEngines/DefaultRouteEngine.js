@@ -3,8 +3,8 @@
 
     Hilary.scope('gidget').register({
         name: 'DefaultRouteEngine',
-        dependencies: ['BaseRouteEngine', 'is'],
-        factory: function (RouteEngine, is) {
+        dependencies: ['BaseRouteEngine', 'is', 'uriHelper'],
+        factory: function (RouteEngine, is, uriHelper) {
 
             var start,
                 onLoad,
@@ -48,20 +48,15 @@
                 start: start
             });
             routeEngine.navigate = function (path, data, pushStateToHistory) {
-                var state = data || {};
+                var state = data || {},
+                    uri = uriHelper.parseUri(path);
 
                 if (is.not.defined(pushStateToHistory)) {
                     pushStateToHistory = true;
                 }
 
-                if (is.string(path.host) && path.host === document.location.host) {
-                    // the path is an href => get the relative path and set the state object
-                    state.path = path;
-                    state.relativePath = path.pathname + path.search + path.hash;
-                    state.title = window.title;
-                } else if (is.string(path) && path.replace(window.location.origin, '').indexOf('http') === -1) {
-                    state.path = path;
-                    state.relativePath = path.replace(window.location.origin, '');
+                if (!uri.host || (uri.host === document.location.host)) {
+                    state.uri = uri;
                     state.title = window.title;
                 } else {
                     window.location = path;
@@ -69,15 +64,15 @@
                 }
 
                 if (pushStateToHistory) {
-                    history.pushState(state.path, state.title, state.relativePath);
+                    history.pushState(state.uri, state.title, state.relativePath);
                 }
 
-                routeEngine.resolveAndExecuteRoute(state.relativePath);
+                routeEngine.resolveAndExecuteRoute(state.uri);
             };
 
             routeEngine.dispose = function () {
                 document.removeEventListener('click', clickHandler, false);
-                window.removeEventListener('popstate', popstateHandler, false);                
+                window.removeEventListener('popstate', popstateHandler, false);
             };
 
             return routeEngine;

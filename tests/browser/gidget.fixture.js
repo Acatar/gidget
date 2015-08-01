@@ -1,5 +1,5 @@
 Hilary.scope('gidget-tests').register({
-    name: 'gidget.browser.fixture',
+    name: 'gidget.fixture',
     dependencies: ['describe', 'it', 'expect'],
     factory: function (describe, it, expect) {
         'use strict';
