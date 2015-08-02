@@ -1,17 +1,18 @@
 Gidget
 ==========
 
-A Domain Service Language (DSL) for JavaScript SPAs and Node.js servers inspired by NancyFx and Sinatra
+A Domain Service Language (DSL) and RouteEngine for JavaScript SPAs inspired by NancyFx, Sinatra and express.
 
 ## Getting started
 
-You can install Gidget with bower, or download the js files from the release directory.
+You can install Gidget with bower, or download the js files from the release directory. It depends on [Hilary](https://github.com/Acatar/hilaryjs), so let's install that too.
 
 ```Shell
+$ bower install --save hilary
 $ bower install --save gidget
 ```
 
-Gidget depends on [Hilary](https://github.com/Acatar/hilaryjs), so you'll need to add two script tags to your DOM.
+Then add two script tags to your DOM:
 
 ```HTML
 <script src="/bower_components/hilary/release/hilary.min.js"></script>
@@ -22,9 +23,9 @@ Gidget depends on [Hilary](https://github.com/Acatar/hilaryjs), so you'll need t
 Let's start by creating a controller. We do this by creating instances of ``GidgetModule``.
 
 ```JavaScript
-var controller = new Gidget.GidgetModule();
+var homeController = new Gidget.GidgetModule();
 
-controller.get['/'] = function (params) {
+homeController.get['/'] = function (err, response) {
     console.log('Home');
 };
 ```
@@ -32,118 +33,91 @@ controller.get['/'] = function (params) {
 Gidget has built in support for parameters:
 
 ```JavaScript
-var controller = new Gidget.GidgetModule();
+var beerController = new Gidget.GidgetModule();
 
-controller.get['/breweries/:brewery/beers/:beer'] = function (params) {
-    console.log('Brewery', params.brewery);
-    console.log('Beer', params.beer);
+beerController.get['/breweries/:brewery/beers/:beer'] = function (err, response) {
+    console.log('Brewery', response.params.brewery);
+    console.log('Beer', response.params.beer);
 };
 ```
 
 If you want to add pipeline events to a given route, it's easiest to do this with a ``GidgetRoute``.
 
 ```JavaScript
-var controller = new Gidget.GidgetModule();
+var beerController = new Gidget.GidgetModule();
 
-controller.get['/breweries/:brewery/beers/:beer'] = new Gidget.GidgetRoute({
-    routeHandler: function (params) {
-        console.log('Brewery', params.brewery);
-        console.log('Beer', params.beer);
+beerController.get['/breweries/:brewery/beers/:beer'] = new Gidget.GidgetRoute({
+    before: function (err, response) {
+        console.log('before beer', response);
     },
-    before: function (params) {
-        console.log('before beer', params);
+    routeHandler: function (err, response) {
+        console.log('Brewery', response.params.brewery);
+        console.log('Beer', response.params.beer);
     },
-    after: function (params) {
-        console.log('after beer', params);
+    after: function (err, response) {
+        console.log('after beer', response);
     }
 });
 ```
 
 ### Starting Gidget (the Bootstrapper)
-Gidget has a built in Bootstrapper to help you get started. You don't have to use it, but it's the easiest way to get started.
+Gidget has a built in Bootstrapper to help you get started. You don't have to use it, but it's the easiest way to get started. The properties are demonstrated in the order in which they will be executed.
 
 ```JavaScript
-Gidget.Bootstrapper({
-    start: function (gidgetApp) {
-        // perform any startup tasks such as binding your DOM
+Gidget.Bootstrapper(null, {
+    composeLifecycle: function (err, gidgetApp, pipeline) {
+        // compose your lifecycle events here
+        pipeline.on.error(function (err) {
+            console.log(err);
+        });
     },
-    configureRoutes: function (gidgetApp) {
+    composeRoutes: function (err, gidgetApp) {
         // add your controllers
         // usually you would not define the controllers // here. you would merely register them
         var controller = new Gidget.GidgetModule();
 
-        controller.get['/'] = function (params) {
+        controller.get['/'] = function (err, res) {
             console.log('Home');
         };
 
-        controller.get['/breweries/:brewery/beers/:beer'] = function (params) {
-            console.log('Brewery', params.brewery);
-            console.log('Beer', params.beer);
+        controller.get['/breweries/:brewery/beers/:beer'] = function (err, res) {
+            console.log('Brewery', res.params.brewery);
+            console.log('Beer', res.params.beer);
         };
 
         gidgetApp.registerModule(controller);
     },
-    configureApplicationLifecycle: function (gidetApp, pipelines) {
-        pipelines.before(function (verb, path, params) {
-            console.log('about to navigate to:', { verb: verb, path: path, params: params });
-        });
-
-        pipelines.after(function (verb, path, params) {
-            console.log('finished navigating to:', { verb: verb, path: path, params: params });
-        });
-    }
-});
-```
-
-If you are composing your application using Hilary, there are some additional features you can take advantage of. Note that in this example, we pass our Hilary scope into the Bootstrapper as the first argument.
-
-```JavaScript
-var scope = Hilary.scope('myScope');
-
-Gidget.Bootstrapper(scope, {
-    // ommited for brevity
-    // start: ...
-    // configureRoutes: ...
-    // configureApplicationLifecycle: ...
-    configureApplicationContainer: function (gidgetApp) {
-        scope.register({
-            name: 'example',
-            factory: function () {
-                console.log('example');
-            }
-        });
-    }
-});
-```
-
-Finally, if you are using a different RouteEngine, you can override the compose behavior:
-
-```JavaScript
-var scope = Hilary.scope('myScope');
-
-Gidget.Bootstrapper(scope, {
-    // ommited for brevity
-    // start: ...
-    // configureRoutes: ...
-    // configureApplicationLifecycle: ...
-    // configureApplicationContainer: ...
-    compose: function (onReady) {
-        var gidget;
-
-        try {
-            gidget = new Gidget({
-                routeEngine: myRouteEngine()
-            });
-
-            onReady(null, gidget);
-        } catch (e) {
-            onReady('Whoops!');
+    onComposed: function (err, gidgetApp) {
+        // when
+        if (!err) {
+            console.log('Gidget is Ready!', gidgetApp);
         }
     }
 });
 ```
 
+If you are composing your application using Hilary, there are some additional features you can take advantage of. Note that in this example, we pass our Hilary scope into the Bootstrapper as the first argument. Again, the properties are demonstrated in the order in which they will be executed.
 
-
-## Router Dependencies
-Gidget has a simple route engine that supports ``post``, ``put``, ``get``, and ``del``. Gidget can also be bootstrapped with a different route engine, such as Sammy.
+```JavaScript
+Gidget.Bootstrapper(Hilary.scope('app'), {
+    hilary: {
+        composeLifecycle: function (err, scope, pipeline) {
+            pipeline.registerEvent('hilary::before::register', function (scope, moduleInfo) {
+                console.log('app::before::register', moduleInfo);
+            });
+        },
+        composeModules: function (err, scope) {
+            var singleton = 'hello world!';
+            scope.register({ name: 'someSingleton', factory: function () { return singleton; } });
+        },
+        onComposed: function (err, scope) {
+            console.log('Hilary is Ready!', gidgetApp);
+            console.log(scope.resolve('someSingleton'));
+        }
+    },
+    // ommited for brevity
+    // composeLifecycle: ...
+    // composeRoutes: ...
+    // onComposed: ...
+});
+```
