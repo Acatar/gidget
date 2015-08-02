@@ -473,6 +473,7 @@ Hilary.scope("gidget").register({
             self.uri = context.uri;
             self.route = context.route;
             self.params = context.params;
+            self.callback = context.callback;
         };
     }
 });
@@ -641,9 +642,10 @@ Hilary.scope("gidget").register({
                 if (matchingRoute) {
                     params = parseParams(uri.path, matchingRoute.route);
                     return new GidgetResponse({
-                        route: matchingRoute,
+                        route: matchingRoute.route,
                         params: params,
-                        uri: uri
+                        uri: uri,
+                        callback: matchingRoute.callback
                     });
                 } else {
                     return false;
@@ -667,12 +669,12 @@ Hilary.scope("gidget").register({
                             uri: uri
                         };
                         pipeline.trigger.on.error(err);
-                    } else if (is.function(response.route.callback)) {
+                    } else if (is.function(response.callback)) {
                         afterThis(response);
                     }
                 };
                 afterThis = function(response) {
-                    pipeline.trigger.after.routeResolution(response, response.route.callback);
+                    pipeline.trigger.after.routeResolution(response, response.callback);
                 };
                 beforeThis();
             };

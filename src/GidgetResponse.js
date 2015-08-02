@@ -17,6 +17,7 @@ Hilary.scope('gidget').register({
             self.uri = context.uri;
             self.route = context.route;
             self.params = context.params;
+            self.callback = context.callback;
         };
     }
 });

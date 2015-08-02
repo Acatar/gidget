@@ -1,3 +1,4 @@
+/*jshint unused: false*/
 Hilary.scope('gidget-tests').register({
     name: 'DefaultRouteEngine.fixture',
     dependencies: ['describe', 'it', 'expect', 'xdescribe', 'xit'],
@@ -6,9 +7,33 @@ Hilary.scope('gidget-tests').register({
 
         describe('Gidget\'s DefaultRouteEngine', function () {
 
-            xdescribe('when a route resolved', function () {
+            describe('when a route resolved', function () {
                 it('should return a GidgetResponse', function (done) {
+                    // given
+                    var path = '/register/callback/GidgetResponse/:response',
+                        expected = '/register/callback/GidgetResponse/foo';
 
+                    Gidget.Bootstrapper(null, {
+                        composeRoutes: function (err, gidgetApp) {
+                            var controller = new Gidget.GidgetModule();
+                            controller.get[path] = function (err, res) {
+                                // then
+                                expect(res.uri.path).to.equal(expected);
+                                expect(res.route.source).to.equal(path);
+                                expect(res.route.verb).to.equal('get');
+                                expect(res.params.response).to.equal('foo');
+                                expect(typeof res.callback).to.equal('function');
+
+                                gidgetApp.routeEngine.dispose();
+                                done();
+                            };
+                            gidgetApp.registerModule(controller);
+                        },
+                        onComposed: function (err, gidgetApp) {
+                            // when
+                            gidgetApp.routeEngine.navigate(expected, null, false);
+                        }
+                    });
                 });
             });
 
@@ -33,43 +58,303 @@ Hilary.scope('gidget-tests').register({
                 });
             }); // /route register()
 
-            xdescribe('when a route is registered with a function that accepts 2 arguments', function () {
+            describe('when a route is registered with a function that accepts 2 arguments', function () {
                 it('should pass in a response object', function (done) {
+                    // given
+                    var expected = '/register/twoparam/callback/response';
 
+                    Gidget.Bootstrapper(null, {
+                        composeRoutes: function (err, gidgetApp) {
+                            var controller = new Gidget.GidgetModule();
+                            controller.get[expected] = function (err, response) {
+                                // then
+                                expect(err).to.equal(null);
+                                expect(response.uri.path).to.equal(expected);
+                                gidgetApp.routeEngine.dispose();
+                                done();
+                            };
+                            gidgetApp.registerModule(controller);
+                        },
+                        onComposed: function (err, gidgetApp) {
+                            // when
+                            gidgetApp.routeEngine.navigate(expected, null, false);
+                        }
+                    });
                 });
 
                 it('should pass in an error, if an error is thrown earlier in the pipeline', function (done) {
+                    // given
+                    var expected = '/register/twoparam/callback/error';
 
+                    Gidget.Bootstrapper(null, {
+                        composeRoutes: function (err, gidgetApp) {
+                            var controller = new Gidget.GidgetModule();
+                            controller.get[expected] = new Gidget.GidgetRoute({
+                                routeHandler: function (err, response) {
+                                   // then
+                                   expect(err.status).to.equal(500);
+                                   gidgetApp.routeEngine.dispose();
+                                   done();
+                               },
+                               before: function (err, res, next) {
+                                   next({ status: 500 });
+                               }
+                            });
+
+                            gidgetApp.registerModule(controller);
+                        },
+                        onComposed: function (err, gidgetApp) {
+                            // when
+                            gidgetApp.routeEngine.navigate(expected, null, false);
+                        }
+                    });
                 });
             }); // /route register(err, res)
 
-            xdescribe('when a route is registered with a function that accepts 3 arguments', function () {
+            describe('when a route is registered with a function that accepts 3 arguments', function () {
                 it('should pass in a response object', function (done) {
+                    // given
+                    var expected = '/register/threeparam/callback/response';
 
+                    Gidget.Bootstrapper(null, {
+                        composeRoutes: function (err, gidgetApp) {
+                            var controller = new Gidget.GidgetModule();
+                            controller.get[expected] = function (err, response, next) {
+                                // then
+                                expect(err).to.equal(null);
+                                expect(response.uri.path).to.equal(expected);
+                                gidgetApp.routeEngine.dispose();
+                                done();
+                            };
+                            gidgetApp.registerModule(controller);
+                        },
+                        onComposed: function (err, gidgetApp) {
+                            // when
+                            gidgetApp.routeEngine.navigate(expected, null, false);
+                        }
+                    });
                 });
 
                 it('should pass in an error, if an error is thrown earlier in the pipeline', function (done) {
+                    // given
+                    var expected = '/register/threeparam/callback/error';
 
+                    Gidget.Bootstrapper(null, {
+                        composeRoutes: function (err, gidgetApp) {
+                            var controller = new Gidget.GidgetModule();
+                            controller.get[expected] = new Gidget.GidgetRoute({
+                                before: function (err, res, next) {
+                                    next({ status: 500 });
+                                },
+                                routeHandler: function (err, response, next) {
+                                   // then
+                                   expect(err.status).to.equal(500);
+                                   gidgetApp.routeEngine.dispose();
+                                   done();
+                               }
+                            });
+
+                            gidgetApp.registerModule(controller);
+                        },
+                        onComposed: function (err, gidgetApp) {
+                            // when
+                            gidgetApp.routeEngine.navigate(expected, null, false);
+                        }
+                    });
                 });
 
                 it('should allow the route to pass in an error to the next phase of the pipeline', function (done) {
-                    // Gidget.GidgetRoute({ after
+                    // given
+                    var expected = '/register/threeparam/callback/after/error';
+
+                    Gidget.Bootstrapper(null, {
+                        composeRoutes: function (err, gidgetApp) {
+                            var controller = new Gidget.GidgetModule();
+                            controller.get[expected] = new Gidget.GidgetRoute({
+                                routeHandler: function (err, response, next) {
+                                   next({ status: 500 });
+                               },
+                               after: function (err, res, next) {
+                                   // then
+                                   expect(err.status).to.equal(500);
+                                   gidgetApp.routeEngine.dispose();
+                                   done();
+                               }
+                            });
+
+                            gidgetApp.registerModule(controller);
+                        },
+                        onComposed: function (err, gidgetApp) {
+                            // when
+                            gidgetApp.routeEngine.navigate(expected, null, false);
+                        }
+                    });
                 });
 
                 it('should allow the route to affect the response object', function (done) {
-                    // Gidget.GidgetRoute({ after
+                    // given
+                    var expected = '/register/threeparam/callback/after/response';
+
+                    Gidget.Bootstrapper(null, {
+                        composeRoutes: function (err, gidgetApp) {
+                            var controller = new Gidget.GidgetModule();
+                            controller.get[expected] = new Gidget.GidgetRoute({
+                                routeHandler: function (err, res, next) {
+                                   res.foo = expected;
+                                   next(err, res);
+                               },
+                               after: function (err, res, next) {
+                                   // then
+                                   expect(res.foo).to.equal(expected);
+                                   gidgetApp.routeEngine.dispose();
+                                   done();
+                               }
+                            });
+
+                            gidgetApp.registerModule(controller);
+                        },
+                        onComposed: function (err, gidgetApp) {
+                            // when
+                            gidgetApp.routeEngine.navigate(expected, null, false);
+                        }
+                    });
                 });
             }); // /route register(err, res, next)
 
-            xdescribe('when a route that has parameters is registered', function () {
+            describe('when a route that has parameters is registered', function () {
                 it('should pass in the parameters by name on the response object', function (done) {
+                    // given
+                    var expected = '/register/params/:param/callback/:foo';
 
+                    Gidget.Bootstrapper(null, {
+                        composeRoutes: function (err, gidgetApp) {
+                            var controller = new Gidget.GidgetModule();
+                            controller.get[expected] = function (err, response) {
+                                // then
+                                expect(err).to.equal(null);
+                                expect(response.params.param).to.equal('test1');
+                                expect(response.params.foo).to.equal('test2');
+                                gidgetApp.routeEngine.dispose();
+                                done();
+                            };
+                            gidgetApp.registerModule(controller);
+                        },
+                        onComposed: function (err, gidgetApp) {
+                            // when
+                            gidgetApp.routeEngine.navigate('/register/params/test1/callback/test2', null, false);
+                        }
+                    });
                 });
 
                 it('should pass in the parameters as a splat array on the response object', function (done) {
+                    // given
+                    var expected = '/register/params/:param/splat/:foo';
 
+                    Gidget.Bootstrapper(null, {
+                        composeRoutes: function (err, gidgetApp) {
+                            var controller = new Gidget.GidgetModule();
+                            controller.get[expected] = function (err, response) {
+                                // then
+                                expect(err).to.equal(null);
+                                expect(response.params.splat[0]).to.equal('test1');
+                                expect(response.params.splat[1]).to.equal('test2');
+                                gidgetApp.routeEngine.dispose();
+                                done();
+                            };
+                            gidgetApp.registerModule(controller);
+                        },
+                        onComposed: function (err, gidgetApp) {
+                            // when
+                            gidgetApp.routeEngine.navigate('/register/params/test1/splat/test2', null, false);
+                        }
+                    });
                 });
             }); // /route /{params}
+
+            describe('when a route that has a hash is registered', function () {
+                it('should be accessable via uri.hash', function (done) {
+                    // given
+                    var expected = '/register/params/:param/hash/:foo';
+
+                    Gidget.Bootstrapper(null, {
+                        composeRoutes: function (err, gidgetApp) {
+                            var controller = new Gidget.GidgetModule();
+                            controller.get[expected] = function (err, response) {
+                                // then
+                                expect(err).to.equal(null);
+                                expect(response.params.splat[0]).to.equal('test1');
+                                expect(response.params.splat[1]).to.equal('test2');
+                                expect(response.uri.hash).to.equal('heading');
+                                gidgetApp.routeEngine.dispose();
+                                done();
+                            };
+                            gidgetApp.registerModule(controller);
+                        },
+                        onComposed: function (err, gidgetApp) {
+                            // when
+                            gidgetApp.routeEngine.navigate('/register/params/test1/hash/test2#heading', null, false);
+                        }
+                    });
+                });
+            });
+
+            describe('when a route that has a query string is registered', function () {
+                it('should put the query string on the uri object', function (done) {
+                    // given
+                    var expected = '/register/params/:param/query-hash/:foo';
+
+                    Gidget.Bootstrapper(null, {
+                        composeRoutes: function (err, gidgetApp) {
+                            var controller = new Gidget.GidgetModule();
+                            controller.get[expected] = function (err, response) {
+                                // then
+                                expect(err).to.equal(null);
+                                expect(response.params.splat[0]).to.equal('test1');
+                                expect(response.params.splat[1]).to.equal('test2');
+                                expect(response.uri.queryString).to.equal('foo=bar&hello=world');
+                                expect(response.uri.query.foo).to.equal('bar');
+                                expect(response.uri.query.hello).to.equal('world');
+                                gidgetApp.routeEngine.dispose();
+                                done();
+                            };
+                            gidgetApp.registerModule(controller);
+                        },
+                        onComposed: function (err, gidgetApp) {
+                            // when
+                            gidgetApp.routeEngine.navigate('/register/params/test1/query-hash/test2?foo=bar&hello=world', null, false);
+                        }
+                    });
+                });
+            });
+
+            describe('when a route that has a query string and a hash is registered', function () {
+                it('should put the hash and query string on the uri object', function (done) {
+                    // given
+                    var expected = '/register/params/:param/query-hash/:foo';
+
+                    Gidget.Bootstrapper(null, {
+                        composeRoutes: function (err, gidgetApp) {
+                            var controller = new Gidget.GidgetModule();
+                            controller.get[expected] = function (err, response) {
+                                // then
+                                expect(err).to.equal(null);
+                                expect(response.params.splat[0]).to.equal('test1');
+                                expect(response.params.splat[1]).to.equal('test2');
+                                expect(response.uri.hash).to.equal('heading');
+                                expect(response.uri.query.foo).to.equal('bar');
+                                expect(response.uri.query.hello).to.equal('world');
+                                gidgetApp.routeEngine.dispose();
+                                done();
+                            };
+                            gidgetApp.registerModule(controller);
+                        },
+                        onComposed: function (err, gidgetApp) {
+                            // when
+                            gidgetApp.routeEngine.navigate('/register/params/test1/query-hash/test2?foo=bar&hello=world#heading', null, false);
+                        }
+                    });
+                });
+            });
 
         }); // /DefaultRouteEngine
     }
