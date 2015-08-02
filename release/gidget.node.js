@@ -507,7 +507,7 @@ Hilary.scope("gidget").register({
     factory: function(Route, GidgetResponse, GidgetPipeline, is, uriHelper, locale, exceptions) {
         "use strict";
         var RouteEngine = function(router) {
-            var self, pipeline = new GidgetPipeline(), routes = [], regularExpressions, makeAsyncCallback, makeRouteExecutionQueue, addRoute, parseRoute, parseParams;
+            var self, pipeline = new GidgetPipeline(), routes = [], regularExpressions, makeAsyncCallback, makeRouteExecutionQueue, addRoute, cleanseParamNames, parseRoute, parseParams;
             router = router || {};
             self = {
                 get: router.get,
@@ -580,23 +580,21 @@ Hilary.scope("gidget").register({
                     callback: makeRouteExecutionQueue(makeAsyncCallback(callback))
                 });
             };
-            parseRoute = function(verb, path, caseSensitive) {
-                var name, names, params, pattern;
-                pattern = String(path);
-                names = pattern.match(regularExpressions.allParams);
+            cleanseParamNames = function(names) {
                 if (names !== null) {
-                    params = function() {
-                        var i, len, results;
-                        results = [];
-                        for (i = 0, len = names.length; i < len; i += 1) {
-                            name = names[i];
-                            results.push(name.substr(1));
-                        }
-                        return results;
-                    }();
+                    var paramNames = [], i;
+                    for (i = 0; i < names.length; i += 1) {
+                        paramNames.push(names[i].substr(1));
+                    }
+                    return paramNames;
                 } else {
-                    params = [];
+                    return [];
                 }
+            };
+            parseRoute = function(verb, path, caseSensitive) {
+                var params, pattern;
+                pattern = String(path);
+                params = cleanseParamNames(pattern.match(regularExpressions.allParams));
                 pattern = pattern.replace(regularExpressions.escapeRegExp, "\\$&");
                 pattern = pattern.replace(regularExpressions.namedParam, "([^/]+)");
                 pattern = pattern.replace(regularExpressions.splatParam, "(.+?)");
@@ -617,7 +615,7 @@ Hilary.scope("gidget").register({
                 matches.shift();
                 params.splat = matches;
                 for (i = 0; i < route.paramNames.length; i += 1) {
-                    params[route.paramNames[i].replace(/:/g, "")] = params.splat[i];
+                    params[route.paramNames[i]] = params.splat[i];
                 }
                 return params;
             };
