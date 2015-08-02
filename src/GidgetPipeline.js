@@ -110,13 +110,13 @@ Hilary.scope('gidget').register({
                 }
             };
 
-            self.trigger.after.routeResolution = function (response, next) {
+            self.trigger.after.routeResolution = function (err, response, next) {
                 var tasks = makePipelineTasks(pipelineEvents.afterRouteResolution, next);
 
                 if (tasks.length) {
-                    tasks[0](null, response);
+                    tasks[0](err, response);
                 } else {
-                    next(null, response);
+                    next(err, response);
                 }
             };
 

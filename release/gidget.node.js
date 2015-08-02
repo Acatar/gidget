@@ -1,4 +1,4 @@
-/*! gidget-builder 2015-08-01 */
+/*! gidget-builder 2015-08-02 */
 var Hilary = require("hilary");
 
 Hilary.scope("gidget").register({
@@ -397,12 +397,12 @@ Hilary.scope("gidget").register({
                     next(null, uri);
                 }
             };
-            self.trigger.after.routeResolution = function(response, next) {
+            self.trigger.after.routeResolution = function(err, response, next) {
                 var tasks = makePipelineTasks(pipelineEvents.afterRouteResolution, next);
                 if (tasks.length) {
-                    tasks[0](null, response);
+                    tasks[0](err, response);
                 } else {
-                    next(null, response);
+                    next(err, response);
                 }
             };
             self.before.routeResolution = function(callback) {
@@ -676,7 +676,7 @@ Hilary.scope("gidget").register({
                     }
                 };
                 afterThis = function(response) {
-                    pipeline.trigger.after.routeResolution(response, response.callback);
+                    pipeline.trigger.after.routeResolution(null, response, response.callback);
                 };
                 beforeThis();
             };

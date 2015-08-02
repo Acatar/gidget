@@ -243,7 +243,7 @@ Hilary.scope('gidget').register({
                 };
 
                 afterThis = function (response) {
-                    pipeline.trigger.after.routeResolution(response, response.callback);
+                    pipeline.trigger.after.routeResolution(null, response, response.callback);
                 };
 
                 // RUN
