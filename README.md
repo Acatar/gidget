@@ -73,7 +73,8 @@ Gidget.Bootstrapper(null, {
     },
     composeRoutes: function (err, gidgetApp) {
         // add your controllers
-        // usually you would not define the controllers // here. you would merely register them
+        // usually you would not define the controllers
+        // here. you would merely register them
         var controller = new Gidget.GidgetModule();
 
         controller.get['/'] = function (err, res) {
