@@ -911,11 +911,17 @@ Hilary.scope("gidget").register({
                 }
             };
             onComposed = function(err, gidgetApp) {
+                var startRouteEngine;
                 if (err) {
                     onError(scope, err);
                 }
+                startRouteEngine = function() {
+                    gidgetApp.routeEngine.start();
+                };
                 if (is.function(bootstrapper.onComposed)) {
-                    bootstrapper.onComposed(err, gidgetApp);
+                    bootstrapper.onComposed(err, gidgetApp, startRouteEngine);
+                } else {
+                    startRouteEngine();
                 }
             };
             if (bootstrapper.options.composeHilary !== false) {
