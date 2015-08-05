@@ -104,8 +104,11 @@ Hilary.scope('gidget').register({
                 };
 
                 // err, scope, gidgetApp
-                if (is.function(bootstrapper.onComposed)) {
+                if (is.function(bootstrapper.onComposed) && bootstrapper.onComposed.length === 3) {
                     bootstrapper.onComposed(err, gidgetApp, startRouteEngine);
+                } else if (is.function(bootstrapper.onComposed)) {
+                    bootstrapper.onComposed(err, gidgetApp);
+                    startRouteEngine();
                 } else {
                     startRouteEngine();
                 }

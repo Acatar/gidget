@@ -1,4 +1,4 @@
-/*! gidget-builder 2015-08-04 */
+/*! gidget-builder 2015-08-05 */
 Hilary.scope("gidget").register({
     name: "IGidget",
     dependencies: [ "Blueprint" ],
@@ -918,8 +918,11 @@ Hilary.scope("gidget").register({
                 startRouteEngine = function() {
                     gidgetApp.routeEngine.start();
                 };
-                if (is.function(bootstrapper.onComposed)) {
+                if (is.function(bootstrapper.onComposed) && bootstrapper.onComposed.length === 3) {
                     bootstrapper.onComposed(err, gidgetApp, startRouteEngine);
+                } else if (is.function(bootstrapper.onComposed)) {
+                    bootstrapper.onComposed(err, gidgetApp);
+                    startRouteEngine();
                 } else {
                     startRouteEngine();
                 }
