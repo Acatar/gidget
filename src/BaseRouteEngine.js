@@ -24,6 +24,12 @@ Hilary.scope('gidget').register({
                 put: router.put,
                 del: router.del,
                 navigate: router.navigate,
+                register: {
+                    get: undefined,
+                    post: undefined,
+                    put: undefined,
+                    del: undefined
+                },
                 parseRoute: undefined,
                 resolveRoute: undefined,
                 resolveAndExecuteRoute: undefined,
@@ -166,49 +172,50 @@ Hilary.scope('gidget').register({
                 return params;
             };
 
-            self.get = self.get || function (path, callback) {
+            self.register.get = self.get || function (path, callback) {
                 return addRoute('get', path, callback);
             };
 
-            self.post = self.post || function (path, callback) {
+            self.register.post = self.post || function (path, callback) {
                 return addRoute('post', path, callback);
             };
 
-            self.put = self.put || function (path, callback) {
+            self.register.put = self.put || function (path, callback) {
                 return addRoute('put', path, callback);
             };
 
-            self.del = self.del || function (path, callback) {
+            self.register.del = self.del || function (path, callback) {
                 return addRoute('del', path, callback);
             };
 
-            self.resolveRoute = function (path) {
+            self.resolveRoute = function (path, verb) {
                 var uri = uriHelper.parseUri(path),
-                    i,
-                    matchingRoute,
-                    params;
+                    makeResponse,
+                    i;
 
-                for (i = 0; i < routes.length; i += 1) {
-                    if (routes[i].route.expression.test(uri.path)) {
-                        matchingRoute = routes[i];
-                        break;
-                    }
-                }
-
-                if (matchingRoute) {
-                    params = parseParams(uri.path, matchingRoute.route);
+                makeResponse = function (uri, matchingRoute) {
                     return new GidgetResponse({
                         route: matchingRoute.route,
-                        params: params,
+                        params: parseParams(uri.path, matchingRoute.route),
                         uri: uri,
                         callback: matchingRoute.callback
                     });
-                } else {
-                    return false;
+                };
+
+                for (i = 0; i < routes.length; i += 1) {
+                    if (routes[i].route.expression.test(uri.path)) {
+                        if (!verb) {
+                            return makeResponse(uri, routes[i]);
+                        } else if (routes[i].route.verb === verb) {
+                            return makeResponse(uri, routes[i]);
+                        }
+                    }
                 }
+
+                return false;
             };
 
-            self.resolveAndExecuteRoute = function (path) {
+            self.resolveAndExecuteRoute = function (path, verb) {
                 var uri = uriHelper.parseUri(path),
                     beforeThis,
                     main,
@@ -225,7 +232,7 @@ Hilary.scope('gidget').register({
                         return;
                     }
 
-                    response = self.resolveRoute(uri);
+                    response = self.resolveRoute(uri, verb);
 
                     if (response === false) {
                         err = { status: 404, message: locale.errors.status404, uri: uri };
@@ -241,6 +248,22 @@ Hilary.scope('gidget').register({
 
                 // RUN
                 beforeThis();
+            };
+
+            self.get = function (path) {
+                return self.resolveAndExecuteRoute(path, 'get');
+            };
+
+            self.post = function (path) {
+                return self.resolveAndExecuteRoute(path, 'post');
+            };
+
+            self.put = function (path) {
+                return self.resolveAndExecuteRoute(path, 'put');
+            };
+
+            self.del = function (path) {
+                return self.resolveAndExecuteRoute(path, 'del');
             };
 
             return self;

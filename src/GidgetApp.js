@@ -24,8 +24,8 @@ Hilary.scope('gidget').register({
 
                 var gets = gidgetModule.get,
                     puts = gidgetModule.put,
-                    posts = gidgetModule.posts,
-                    dels = gidgetModule.dels,
+                    posts = gidgetModule.post,
+                    dels = gidgetModule.del,
                     get,
                     put,
                     post,
@@ -33,25 +33,25 @@ Hilary.scope('gidget').register({
 
                 for (get in gets) {
                     if (gets.hasOwnProperty(get)) {
-                        routeEngine.get(get, gets[get]);
+                        routeEngine.register.get(get, gets[get]);
                     }
                 }
 
                 for (put in puts) {
                     if (puts.hasOwnProperty(put)) {
-                        routeEngine.put(put, puts[put]);
+                        routeEngine.register.put(put, puts[put]);
                     }
                 }
 
                 for (post in posts) {
                     if (posts.hasOwnProperty(post)) {
-                        routeEngine.post(post, posts[post]);
+                        routeEngine.register.post(post, posts[post]);
                     }
                 }
 
                 for (del in dels) {
                     if (dels.hasOwnProperty(del)) {
-                        routeEngine.del(del, dels[del]);
+                        routeEngine.register.del(del, dels[del]);
                     }
                 }
             };

@@ -67,7 +67,7 @@
                     history.pushState(state.uri, state.title, state.relativePath);
                 }
 
-                routeEngine.resolveAndExecuteRoute(state.uri);
+                routeEngine.resolveAndExecuteRoute(state.uri, 'get');
             };
 
             routeEngine.dispose = function () {

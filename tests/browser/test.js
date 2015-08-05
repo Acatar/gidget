@@ -5,6 +5,8 @@
     var compose, start;
 
     compose = function (onReady) {
+        scope.setParentContainer(gidgetScope);
+
         scope.register({ name: 'describe', factory: function () { return describe; } });
         scope.register({ name: 'it', factory: function () { return it; } });
         scope.register({ name: 'xdescribe', factory: function () { return xdescribe; } });
@@ -25,6 +27,7 @@
         scope.resolve('DefaultRouteEngine.fixture');
         scope.resolve('pipeline.fixture');
         scope.resolve('uriHelper.fixture');
+        scope.resolve('GidgetModule.fixture');
     };
 
     compose(start);
