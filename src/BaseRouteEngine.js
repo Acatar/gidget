@@ -1,7 +1,7 @@
 Hilary.scope('gidget').register({
     name: 'BaseRouteEngine',
-    dependencies: ['Route', 'GidgetResponse', 'GidgetPipeline', 'is', 'uriHelper', 'locale', 'exceptions'],
-    factory: function (Route, GidgetResponse, GidgetPipeline, is, uriHelper, locale, exceptions) {
+    dependencies: ['Route', 'GidgetRequest', 'GidgetPipeline', 'is', 'uriHelper', 'locale', 'exceptions'],
+    factory: function (Route, GidgetRequest, GidgetPipeline, is, uriHelper, locale, exceptions) {
         'use strict';
 
         var RouteEngine = function (router) {
@@ -63,7 +63,7 @@ Hilary.scope('gidget').register({
             };
 
             makeRouteExecutionQueue = function (callback) {
-                return function (err, response) {
+                return function (err, request) {
                     var beforeThis,
                         beforeAll,
                         main,
@@ -72,30 +72,30 @@ Hilary.scope('gidget').register({
 
                     beforeThis = function () {
                         if (is.function(callback.before)) {
-                            callback.before(null, response, beforeAll);
+                            callback.before(null, request, beforeAll);
                         } else {
-                            beforeAll(null, response);
+                            beforeAll(null, request);
                         }
                     };
 
-                    beforeAll = function (err, response) {
-                        pipeline.trigger.before.routeExecution(err, response, main);
+                    beforeAll = function (err, request) {
+                        pipeline.trigger.before.routeExecution(err, request, main);
                     };
 
-                    main = function (err, response) {
-                        callback(err, response, afterThis);
+                    main = function (err, request) {
+                        callback(err, request, afterThis);
                     };
 
-                    afterThis = function (err, response) {
+                    afterThis = function (err, request) {
                         if (is.function(callback.after)) {
-                            callback.after(err, response, afterAll);
+                            callback.after(err, request, afterAll);
                         } else {
-                            afterAll(err, response);
+                            afterAll(err, request);
                         }
                     };
 
-                    afterAll = function (err, response) {
-                        pipeline.trigger.after.routeExecution(err, response);
+                    afterAll = function (err, request) {
+                        pipeline.trigger.after.routeExecution(err, request);
                     };
 
                     // RUN
@@ -190,11 +190,11 @@ Hilary.scope('gidget').register({
 
             self.resolveRoute = function (path, verb) {
                 var uri = uriHelper.parseUri(path),
-                    makeResponse,
+                    makeRequest,
                     i;
 
-                makeResponse = function (uri, matchingRoute) {
-                    return new GidgetResponse({
+                makeRequest = function (uri, matchingRoute) {
+                    return new GidgetRequest({
                         route: matchingRoute.route,
                         params: parseParams(uri.path, matchingRoute.route),
                         uri: uri,
@@ -205,9 +205,9 @@ Hilary.scope('gidget').register({
                 for (i = 0; i < routes.length; i += 1) {
                     if (routes[i].route.expression.test(uri.path)) {
                         if (!verb) {
-                            return makeResponse(uri, routes[i]);
+                            return makeRequest(uri, routes[i]);
                         } else if (routes[i].route.verb === verb) {
-                            return makeResponse(uri, routes[i]);
+                            return makeRequest(uri, routes[i]);
                         }
                     }
                 }
@@ -220,30 +220,30 @@ Hilary.scope('gidget').register({
                     beforeThis,
                     main,
                     afterThis,
-                    response;
+                    request;
 
                 beforeThis = function () {
-                    pipeline.trigger.before.routeResolution(uri, main);
+                    pipeline.trigger.before.routeResolution(new GidgetRequest({ uri: uri }), main);
                 };
 
-                main = function (err, uri) {
+                main = function (err, req) {
                     if (err) {
                         pipeline.trigger.on.error(err);
                         return;
                     }
 
-                    response = self.resolveRoute(uri, verb);
+                    request = self.resolveRoute(req.uri, verb);
 
-                    if (response === false) {
+                    if (request === false) {
                         err = { status: 404, message: locale.errors.status404, uri: uri };
                         pipeline.trigger.on.error(err);
-                    } else if (is.function(response.callback)) {
-                        afterThis(response);
+                    } else if (is.function(request.callback)) {
+                        afterThis(request);
                     }
                 };
 
-                afterThis = function (response) {
-                    pipeline.trigger.after.routeResolution(null, response, response.callback);
+                afterThis = function (request) {
+                    pipeline.trigger.after.routeResolution(null, request, request.callback);
                 };
 
                 // RUN

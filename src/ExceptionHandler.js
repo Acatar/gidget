@@ -67,20 +67,20 @@ Hilary.scope('gidget').register({
             self.throw(self.notImplementedException(message, data));
         };
 
-        self.fetchException = function (response) {
-            response = response || {};
-            response.status = response.status || 'unknown';
+        self.fetchException = function (request) {
+            request = request || {};
+            request.status = request.status || 'unknown';
 
-            return makeException('FetchException', 'Server Request Failed with status: ' + response.status, response);
+            return makeException('FetchException', 'Server Request Failed with status: ' + request.status, request);
         };
 
-        self.throwFetchException = function (response) {
-            self.throw(self.fetchException(response));
+        self.throwFetchException = function (request) {
+            self.throw(self.fetchException(request));
 
             // In order to support fetch.throw, we have to throw a real JS Exception
             // If self.throw doesn't do that for us, this will ensure that functionality
             // is maintained
-            throw new Error('Server Request Failed with status: ' + response.status);
+            throw new Error('Server Request Failed with status: ' + request.status);
         };
 
         self.throwException = function (exception) {

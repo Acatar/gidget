@@ -12,13 +12,8 @@
         hilary: {
             composeLifecycle: function (err, scope, pipeline) {
                 pipeline.on.error(function (err) {
-                    if (err && err.message) {
-                        throw err;
-                    } else if (typeof err === 'string') {
-                        throw new Error(err);
-                    } else {
-                        console.log(err);
-                    }
+                    console.log('error.data', err.data);
+                    throw err;
                 });
             },
             composeModules: function (err, scope) {
@@ -102,13 +97,8 @@
             });
 
             pipeline.on.error(function (err) {
-                if (err && err.message) {
-                    throw err;
-                } else if (typeof err === 'string') {
-                    throw new Error(err);
-                } else {
-                    console.log(err);
-                }
+                console.log('error.data', err.data);
+                throw err;
             });
         },
         composeRoutes: function (err, gidgetApp) {

@@ -15,10 +15,10 @@ Hilary.scope('gidget-tests').register({
 
                     Gidget.Bootstrapper(null, {
                         composeLifecycle: function (err, gidgetApp, pipeline) {
-                            pipeline.before.routeResolution(function (err, uri) {
-                                if (uri.path === sutPath) {
+                            pipeline.before.routeResolution(function (err, req) {
+                                if (req.uri.path === sutPath) {
                                     // then
-                                    expect(uri.path).to.equal(sutPath);
+                                    expect(req.uri.path).to.equal(sutPath);
                                     gidgetApp.routeEngine.dispose();
                                     done();
                                 }
@@ -26,7 +26,7 @@ Hilary.scope('gidget-tests').register({
                         },
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
-                            controller.get[sutPath] = function (err, res) {
+                            controller.get[sutPath] = function (err, req) {
 
                             };
                             gidgetApp.registerModule(controller);
@@ -45,16 +45,16 @@ Hilary.scope('gidget-tests').register({
 
                     Gidget.Bootstrapper(null, {
                         composeLifecycle: function (err, gidgetApp, pipeline) {
-                            pipeline.before.routeResolution(function (err, uri, next) {
-                                if (uri.path === sutPath) {
-                                    uri.path = affectedPath;
+                            pipeline.before.routeResolution(function (err, req, next) {
+                                if (req.uri.path === sutPath) {
+                                    req.uri.path = affectedPath;
                                 }
-                                next(err, uri);
+                                next(err, req);
                             });
                         },
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
-                            controller.get[affectedPath] = function (err, res) {
+                            controller.get[affectedPath] = function (err, req) {
                                 gidgetApp.routeEngine.dispose();
                                 done();
                             };
@@ -70,16 +70,16 @@ Hilary.scope('gidget-tests').register({
             }); // /before.routeResolution
 
             describe('when after.routeResolution has a registered handler', function () {
-                it('should pass the response into the handler', function (done) {
+                it('should pass the request into the handler', function (done) {
                     // given
                     var sutPath = '/pipeline/after/routeResolution/path';
 
                     Gidget.Bootstrapper(null, {
                         composeLifecycle: function (err, gidgetApp, pipeline) {
-                            pipeline.after.routeResolution(function (err, res) {
-                                if (res.uri.path === sutPath) {
+                            pipeline.after.routeResolution(function (err, req) {
+                                if (req.uri.path === sutPath) {
                                     // then
-                                    expect(res.route.source).to.equal(sutPath);
+                                    expect(req.route.source).to.equal(sutPath);
                                     gidgetApp.routeEngine.dispose();
                                     done();
                                 }
@@ -87,7 +87,7 @@ Hilary.scope('gidget-tests').register({
                         },
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
-                            controller.get[sutPath] = function (err, res) {
+                            controller.get[sutPath] = function (err, req) {
 
                             };
                             gidgetApp.registerModule(controller);
@@ -107,18 +107,18 @@ Hilary.scope('gidget-tests').register({
 
                     Gidget.Bootstrapper(null, {
                         composeLifecycle: function (err, gidgetApp, pipeline) {
-                            pipeline.before.routeExecution(function (err, res, next) {
-                                if (res.uri.path === sutPath) {
-                                    res.params = { foo: 'bar' };
+                            pipeline.before.routeExecution(function (err, req, next) {
+                                if (req.uri.path === sutPath) {
+                                    req.params = { foo: 'bar' };
                                 }
 
-                                next(err, res);
+                                next(err, req);
                             });
                         },
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
-                            controller.get[sutPath] = function (err, res) {
-                                expect(res.params.foo).to.equal('bar');
+                            controller.get[sutPath] = function (err, req) {
+                                expect(req.params.foo).to.equal('bar');
                                 gidgetApp.routeEngine.dispose();
                                 done();
                             };
@@ -133,15 +133,15 @@ Hilary.scope('gidget-tests').register({
             }); // /before.routeExecution
 
             describe('when after.routeExecution has a registered handler', function () {
-                it('should receive the response as passed by the route handler', function (done) {
+                it('should receive the request as passed by the route handler', function (done) {
                     // given
                     var sutPath = '/pipeline/after/routeExecution';
 
                     Gidget.Bootstrapper(null, {
                         composeLifecycle: function (err, gidgetApp, pipeline) {
-                            pipeline.after.routeExecution(function (err, res) {
-                                if (res.uri.path === sutPath) {
-                                    expect(res.foo).to.equal('bar');
+                            pipeline.after.routeExecution(function (err, req) {
+                                if (req.uri.path === sutPath) {
+                                    expect(req.foo).to.equal('bar');
                                     gidgetApp.routeEngine.dispose();
                                     done();
                                 }
@@ -149,9 +149,9 @@ Hilary.scope('gidget-tests').register({
                         },
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
-                            controller.get[sutPath] = function (err, res, next) {
-                                res.foo = 'bar';
-                                next(null, res);
+                            controller.get[sutPath] = function (err, req, next) {
+                                req.foo = 'bar';
+                                next(null, req);
                             };
                             gidgetApp.registerModule(controller);
                         },
@@ -168,8 +168,8 @@ Hilary.scope('gidget-tests').register({
 
                     Gidget.Bootstrapper(null, {
                         composeLifecycle: function (err, gidgetApp, pipeline) {
-                            pipeline.after.routeExecution(function (err, res) {
-                                if (res.uri.path === sutPath) {
+                            pipeline.after.routeExecution(function (err, req) {
+                                if (req.uri.path === sutPath) {
                                     expect(err.status).to.equal(500);
                                     gidgetApp.routeEngine.dispose();
                                     done();
@@ -178,8 +178,8 @@ Hilary.scope('gidget-tests').register({
                         },
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
-                            controller.get[sutPath] = function (err, res, next) {
-                                next({ status: 500 }, res);
+                            controller.get[sutPath] = function (err, req, next) {
+                                next({ status: 500 }, req);
                             };
                             gidgetApp.registerModule(controller);
                         },
@@ -198,7 +198,7 @@ Hilary.scope('gidget-tests').register({
 
                     Gidget.Bootstrapper(null, {
                         composeLifecycle: function (err, gidgetApp, pipeline) {
-                            pipeline.before.routeResolution(function (err, uri, next) {
+                            pipeline.before.routeResolution(function (err, req, next) {
                                 next({ status: 500, path: sutPath });
                             });
 
@@ -212,8 +212,8 @@ Hilary.scope('gidget-tests').register({
                         },
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
-                            controller.get[sutPath] = function (err, res, next) {
-                                next(null, res);
+                            controller.get[sutPath] = function (err, req, next) {
+                                next(null, req);
                             };
                             gidgetApp.registerModule(controller);
                         },
@@ -234,8 +234,8 @@ Hilary.scope('gidget-tests').register({
                     Gidget.Bootstrapper(null, {
                         composeLifecycle: function (err, gidgetApp, pipeline) {
                             pipeline.before.routeResolution(new gidgetApp.PipelineEvent({
-                                eventHandler: function (err, uri) {
-                                    if (uri.path === sutPath) {
+                                eventHandler: function (err, req) {
+                                    if (req.uri.path === sutPath) {
                                         count += 1;
                                     }
                                 },
@@ -244,7 +244,7 @@ Hilary.scope('gidget-tests').register({
                         },
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
-                            controller.get[sutPath] = function (err, res) {
+                            controller.get[sutPath] = function (err, req) {
 
                             };
                             gidgetApp.registerModule(controller);
@@ -272,14 +272,14 @@ Hilary.scope('gidget-tests').register({
                     Gidget.Bootstrapper(null, {
                         composeLifecycle: function (err, gidgetApp, pipeline) {
                             pipeline.before.routeResolution(new gidgetApp.PipelineEvent({
-                                eventHandler: function (err, uri) {
-                                    if (uri.path === sutPath) {
+                                eventHandler: function (err, req) {
+                                    if (req.uri.path === sutPath) {
                                         count += 1;
                                     }
                                 },
                                 // remove: when
-                                remove: function (err, uri) {
-                                    if (uri.path === sutPath) {
+                                remove: function (err, req) {
+                                    if (req.uri.path === sutPath) {
                                         return true;
                                     }
                                 }
@@ -287,7 +287,7 @@ Hilary.scope('gidget-tests').register({
                         },
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
-                            controller.get[sutPath] = function (err, res) {
+                            controller.get[sutPath] = function (err, req) {
 
                             };
                             gidgetApp.registerModule(controller);
@@ -313,14 +313,14 @@ Hilary.scope('gidget-tests').register({
                     Gidget.Bootstrapper(null, {
                         composeLifecycle: function (err, gidgetApp, pipeline) {
                             pipeline.before.routeResolution(new gidgetApp.PipelineEvent({
-                                eventHandler: function (err, uri) {
-                                    if (uri.path === sutPath) {
+                                eventHandler: function (err, req) {
+                                    if (req.uri.path === sutPath) {
                                         count += 1;
                                     }
                                 },
                                 // remove: when
-                                remove: function (err, uri) {
-                                    if (uri.path === sutPath && count === 2) {
+                                remove: function (err, req) {
+                                    if (req.uri.path === sutPath && count === 2) {
                                         return true;
                                     }
                                 }
@@ -328,7 +328,7 @@ Hilary.scope('gidget-tests').register({
                         },
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
-                            controller.get[sutPath] = function (err, res) {
+                            controller.get[sutPath] = function (err, req) {
 
                             };
                             gidgetApp.registerModule(controller);

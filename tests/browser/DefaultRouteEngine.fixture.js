@@ -59,17 +59,17 @@ Hilary.scope('gidget-tests').register({
             }); // /route register()
 
             describe('when a route is registered with a function that accepts 2 arguments', function () {
-                it('should pass in a response object', function (done) {
+                it('should pass in a request object', function (done) {
                     // given
                     var expected = '/register/twoparam/callback/response';
 
                     Gidget.Bootstrapper(null, {
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
-                            controller.get[expected] = function (err, response) {
+                            controller.get[expected] = function (err, req) {
                                 // then
                                 expect(err).to.equal(null);
-                                expect(response.uri.path).to.equal(expected);
+                                expect(req.uri.path).to.equal(expected);
                                 gidgetApp.routeEngine.dispose();
                                 done();
                             };
@@ -90,7 +90,7 @@ Hilary.scope('gidget-tests').register({
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
                             controller.get[expected] = new Gidget.GidgetRoute({
-                                routeHandler: function (err, response) {
+                                routeHandler: function (err, req) {
                                    // then
                                    expect(err.status).to.equal(500);
                                    gidgetApp.routeEngine.dispose();
@@ -112,17 +112,17 @@ Hilary.scope('gidget-tests').register({
             }); // /route register(err, res)
 
             describe('when a route is registered with a function that accepts 3 arguments', function () {
-                it('should pass in a response object', function (done) {
+                it('should pass in a request object', function (done) {
                     // given
                     var expected = '/register/threeparam/callback/response';
 
                     Gidget.Bootstrapper(null, {
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
-                            controller.get[expected] = function (err, response, next) {
+                            controller.get[expected] = function (err, req, next) {
                                 // then
                                 expect(err).to.equal(null);
-                                expect(response.uri.path).to.equal(expected);
+                                expect(req.uri.path).to.equal(expected);
                                 gidgetApp.routeEngine.dispose();
                                 done();
                             };
@@ -146,7 +146,7 @@ Hilary.scope('gidget-tests').register({
                                 before: function (err, res, next) {
                                     next({ status: 500 });
                                 },
-                                routeHandler: function (err, response, next) {
+                                routeHandler: function (err, req, next) {
                                    // then
                                    expect(err.status).to.equal(500);
                                    gidgetApp.routeEngine.dispose();
@@ -171,7 +171,7 @@ Hilary.scope('gidget-tests').register({
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
                             controller.get[expected] = new Gidget.GidgetRoute({
-                                routeHandler: function (err, response, next) {
+                                routeHandler: function (err, req, next) {
                                    next({ status: 500 });
                                },
                                after: function (err, res, next) {
@@ -191,7 +191,7 @@ Hilary.scope('gidget-tests').register({
                     });
                 });
 
-                it('should allow the route to affect the response object', function (done) {
+                it('should allow the route to affect the request object', function (done) {
                     // given
                     var expected = '/register/threeparam/callback/after/response';
 
@@ -222,18 +222,18 @@ Hilary.scope('gidget-tests').register({
             }); // /route register(err, res, next)
 
             describe('when a route that has parameters is registered', function () {
-                it('should pass in the parameters by name on the response object', function (done) {
+                it('should pass in the parameters by name on the request object', function (done) {
                     // given
                     var expected = '/register/params/:param/callback/:foo';
 
                     Gidget.Bootstrapper(null, {
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
-                            controller.get[expected] = function (err, response) {
+                            controller.get[expected] = function (err, req) {
                                 // then
                                 expect(err).to.equal(null);
-                                expect(response.params.param).to.equal('test1');
-                                expect(response.params.foo).to.equal('test2');
+                                expect(req.params.param).to.equal('test1');
+                                expect(req.params.foo).to.equal('test2');
                                 gidgetApp.routeEngine.dispose();
                                 done();
                             };
@@ -246,18 +246,18 @@ Hilary.scope('gidget-tests').register({
                     });
                 });
 
-                it('should pass in the parameters as a splat array on the response object', function (done) {
+                it('should pass in the parameters as a splat array on the request object', function (done) {
                     // given
                     var expected = '/register/params/:param/splat/:foo';
 
                     Gidget.Bootstrapper(null, {
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
-                            controller.get[expected] = function (err, response) {
+                            controller.get[expected] = function (err, req) {
                                 // then
                                 expect(err).to.equal(null);
-                                expect(response.params.splat[0]).to.equal('test1');
-                                expect(response.params.splat[1]).to.equal('test2');
+                                expect(req.params.splat[0]).to.equal('test1');
+                                expect(req.params.splat[1]).to.equal('test2');
                                 gidgetApp.routeEngine.dispose();
                                 done();
                             };
@@ -279,12 +279,12 @@ Hilary.scope('gidget-tests').register({
                     Gidget.Bootstrapper(null, {
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
-                            controller.get[expected] = function (err, response) {
+                            controller.get[expected] = function (err, req) {
                                 // then
                                 expect(err).to.equal(null);
-                                expect(response.params.splat[0]).to.equal('test1');
-                                expect(response.params.splat[1]).to.equal('test2');
-                                expect(response.uri.hash).to.equal('heading');
+                                expect(req.params.splat[0]).to.equal('test1');
+                                expect(req.params.splat[1]).to.equal('test2');
+                                expect(req.uri.hash).to.equal('heading');
                                 gidgetApp.routeEngine.dispose();
                                 done();
                             };
@@ -306,14 +306,14 @@ Hilary.scope('gidget-tests').register({
                     Gidget.Bootstrapper(null, {
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
-                            controller.get[expected] = function (err, response) {
+                            controller.get[expected] = function (err, req) {
                                 // then
                                 expect(err).to.equal(null);
-                                expect(response.params.splat[0]).to.equal('test1');
-                                expect(response.params.splat[1]).to.equal('test2');
-                                expect(response.uri.queryString).to.equal('foo=bar&hello=world');
-                                expect(response.uri.query.foo).to.equal('bar');
-                                expect(response.uri.query.hello).to.equal('world');
+                                expect(req.params.splat[0]).to.equal('test1');
+                                expect(req.params.splat[1]).to.equal('test2');
+                                expect(req.uri.queryString).to.equal('foo=bar&hello=world');
+                                expect(req.uri.query.foo).to.equal('bar');
+                                expect(req.uri.query.hello).to.equal('world');
                                 gidgetApp.routeEngine.dispose();
                                 done();
                             };
@@ -335,14 +335,14 @@ Hilary.scope('gidget-tests').register({
                     Gidget.Bootstrapper(null, {
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
-                            controller.get[expected] = function (err, response) {
+                            controller.get[expected] = function (err, req) {
                                 // then
                                 expect(err).to.equal(null);
-                                expect(response.params.splat[0]).to.equal('test1');
-                                expect(response.params.splat[1]).to.equal('test2');
-                                expect(response.uri.hash).to.equal('heading');
-                                expect(response.uri.query.foo).to.equal('bar');
-                                expect(response.uri.query.hello).to.equal('world');
+                                expect(req.params.splat[0]).to.equal('test1');
+                                expect(req.params.splat[1]).to.equal('test2');
+                                expect(req.uri.hash).to.equal('heading');
+                                expect(req.uri.query.foo).to.equal('bar');
+                                expect(req.uri.query.hello).to.equal('world');
                                 gidgetApp.routeEngine.dispose();
                                 done();
                             };

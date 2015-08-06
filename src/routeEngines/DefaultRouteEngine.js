@@ -64,7 +64,7 @@
                 }
 
                 if (pushStateToHistory) {
-                    history.pushState(state.uri, state.title, state.relativePath);
+                    history.pushState(state.uri, state.title, state.uri.relativePath);
                 }
 
                 routeEngine.resolveAndExecuteRoute(state.uri, 'get');

@@ -1,5 +1,5 @@
 Hilary.scope('gidget').register({
-    name: 'GidgetResponse',
+    name: 'GidgetRequest',
     dependencies: ['is'],
     factory: function (is) {
         'use strict';

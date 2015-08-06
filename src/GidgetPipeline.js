@@ -57,26 +57,39 @@ Hilary.scope('gidget').register({
             makePipelineTasks = function (pipeline, last) {
                 var i,
                     tasks = [],
-                    makeTask = function (i) {
-                        return  function (err, response) {
-                            var event;
+                    executeEvent,
+                    makeTask;
 
-                            if (pipeline.length === i) {
-                                if (is.function(last)) {
-                                    last(err, response);
-                                }
-                            } else {
-                                event = pipeline[i];
-                                event(err, response, makeTask((i + 1)));
+                executeEvent = function(i, err, request) {
+                    var event = pipeline[i];
 
-                                if (event.once) {
-                                    pipeline.splice(i, 1);
-                                } else if (is.function(event.remove) && event.remove(err, response)) {
-                                    pipeline.splice(i, 1);
-                                }
+                    if (is.function(event) && event.length === 3) {
+                        event(err, request, makeTask(i + 1));
+                    } else if (is.function(event)) {
+                        event(err, request);
+                        makeTask(i + 1)(err, request);
+                    }
+
+                    if (event.once) {
+                        pipeline.splice(i, 1);
+                    } else if (is.function(event.remove) && event.remove(err, request)) {
+                        pipeline.splice(i, 1);
+                    }
+                };
+
+                makeTask = function (i) {
+                    return  function (err, request) {
+                        if (pipeline.length === i) {
+                            if (is.function(last)) {
+                                last(err, request);
                             }
-                        };
+                        } else if (is.function(pipeline[i])) {
+                            executeEvent(i, err, request);
+                        } else {
+                            makeTask(i + 1);
+                        }
                     };
+                };
 
                 for (i = 0; i < pipeline.length; i += 1) {
                     tasks.push(makeTask(i));
@@ -85,21 +98,21 @@ Hilary.scope('gidget').register({
                 return tasks;
             };
 
-            self.trigger.before.routeExecution = function (err, response, next) {
+            self.trigger.before.routeExecution = function (err, request, next) {
                 var tasks = makePipelineTasks(pipelineEvents.before, next);
 
                 if (tasks.length) {
-                    tasks[0](err, response);
+                    tasks[0](err, request, next);
                 } else {
-                    next(err, response);
+                    next(err, request);
                 }
             };
 
-            self.trigger.after.routeExecution = function (err, response) {
+            self.trigger.after.routeExecution = function (err, request) {
                 var tasks = makePipelineTasks(pipelineEvents.after);
 
                 if (tasks.length) {
-                    tasks[0](err, response);
+                    tasks[0](err, request);
                 }
             };
 
@@ -121,22 +134,22 @@ Hilary.scope('gidget').register({
                 }
             };
 
-            self.trigger.before.routeResolution = function (uri, next) {
+            self.trigger.before.routeResolution = function (request, next) {
                 var tasks = makePipelineTasks(pipelineEvents.beforeRouteResolution, next);
                 if (tasks.length) {
-                    tasks[0](null, uri);
+                    tasks[0](null, request, next);
                 } else {
-                    next(null, uri);
+                    next(null, request);
                 }
             };
 
-            self.trigger.after.routeResolution = function (err, response, next) {
+            self.trigger.after.routeResolution = function (err, request, next) {
                 var tasks = makePipelineTasks(pipelineEvents.afterRouteResolution, next);
 
                 if (tasks.length) {
-                    tasks[0](err, response);
+                    tasks[0](err, request, next);
                 } else {
-                    next(err, response);
+                    next(err, request);
                 }
             };
 
@@ -176,9 +189,9 @@ Hilary.scope('gidget').register({
                 }
 
                 if (callback.length < 3) {
-                    pipelineEvents.before.push(function (err, response, next) {
-                        callback(err, response);
-                        next(null, response);
+                    pipelineEvents.before.push(function (err, request, next) {
+                        callback(err, request);
+                        next(null, request);
                     });
                 } else {
                     pipelineEvents.before.push(callback);

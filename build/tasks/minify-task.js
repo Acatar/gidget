@@ -22,7 +22,7 @@ module.exports = function (grunt) {
         '../src/GidgetModule.js',
         '../src/GidgetPipeline.js',
         '../src/GidgetPipelineEvent.js',
-        '../src/GidgetResponse.js',
+        '../src/GidgetRequest.js',
         '../src/GidgetRoute.js',
         '../src/BaseRouteEngine.js',
         '../src/routeEngines/DefaultRouteEngine.js',

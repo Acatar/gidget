@@ -1,7 +1,7 @@
 Gidget
 ==========
 
-A Domain Service Language (DSL) and RouteEngine for JavaScript SPAs inspired by NancyFx, Sinatra and express.
+Gidget is a Domain Service Language (DSL) and RouteEngine for JavaScript SPAs inspired by NancyFx, Sinatra and express.
 
 ## Getting started
 
@@ -25,7 +25,7 @@ Let's start by creating a controller. We do this by creating instances of ``Gidg
 ```JavaScript
 var homeController = new Gidget.GidgetModule();
 
-homeController.get['/'] = function (err, response) {
+homeController.get['/'] = function (err, req) {
     console.log('Home');
 };
 ```
@@ -35,9 +35,9 @@ Gidget has built in support for parameters:
 ```JavaScript
 var beerController = new Gidget.GidgetModule();
 
-beerController.get['/breweries/:brewery/beers/:beer'] = function (err, response) {
-    console.log('Brewery', response.params.brewery);
-    console.log('Beer', response.params.beer);
+beerController.get['/breweries/:brewery/beers/:beer'] = function (err, req) {
+    console.log('Brewery', req.params.brewery);
+    console.log('Beer', req.params.beer);
 };
 ```
 
@@ -47,15 +47,15 @@ If you want to add pipeline events to a given route, it's easiest to do this wit
 var beerController = new Gidget.GidgetModule();
 
 beerController.get['/breweries/:brewery/beers/:beer'] = new Gidget.GidgetRoute({
-    before: function (err, response) {
-        console.log('before beer', response);
+    before: function (err, req) {
+        console.log('before beer', req);
     },
-    routeHandler: function (err, response) {
-        console.log('Brewery', response.params.brewery);
-        console.log('Beer', response.params.beer);
+    routeHandler: function (err, req) {
+        console.log('Brewery', req.params.brewery);
+        console.log('Beer', req.params.beer);
     },
-    after: function (err, response) {
-        console.log('after beer', response);
+    after: function (err, req) {
+        console.log('after beer', req);
     }
 });
 ```
@@ -77,13 +77,13 @@ Gidget.Bootstrapper(null, {
         // here. you would merely register them
         var controller = new Gidget.GidgetModule();
 
-        controller.get['/'] = function (err, res) {
+        controller.get['/'] = function (err, req) {
             console.log('Home');
         };
 
-        controller.get['/breweries/:brewery/beers/:beer'] = function (err, res) {
-            console.log('Brewery', res.params.brewery);
-            console.log('Beer', res.params.beer);
+        controller.get['/breweries/:brewery/beers/:beer'] = function (err, req) {
+            console.log('Brewery', req.params.brewery);
+            console.log('Beer', req.params.beer);
         };
 
         gidgetApp.registerModule(controller);

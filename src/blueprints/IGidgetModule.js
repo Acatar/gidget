@@ -4,26 +4,6 @@ Hilary.scope('gidget').register({
     factory: function (Blueprint) {
         'use strict';
 
-        var registerBp = new Blueprint({
-            __blueprintId: 'IGidgetModule.register',
-            get: {
-                type: 'function',
-                args: ['routePath', 'routeHandler']
-            },
-            post: {
-                type: 'function',
-                args: ['routePath', 'routeHandler']
-            },
-            put: {
-                type: 'function',
-                args: ['routePath', 'routeHandler']
-            },
-            del: {
-                type: 'function',
-                args: ['routePath', 'routeHandler']
-            }
-        });
-
         return new Blueprint({
             __blueprintId: 'IGidgetModule',
             get: 'object',
@@ -31,11 +11,26 @@ Hilary.scope('gidget').register({
             put: 'object',
             del: 'object',
             register: {
-                validate: function (obj, errors) {
-                    if (!registerBp.syncSignatureMatches(obj).result) {
-                        errors = errors.concat(registerBp.syncSignatureMatches(obj).errors);
+                type: 'blueprint',
+                blueprint: new Blueprint({
+                    __blueprintId: 'IGidgetModule.register',
+                    get: {
+                        type: 'function',
+                        args: ['routePath', 'routeHandler']
+                    },
+                    post: {
+                        type: 'function',
+                        args: ['routePath', 'routeHandler']
+                    },
+                    put: {
+                        type: 'function',
+                        args: ['routePath', 'routeHandler']
+                    },
+                    del: {
+                        type: 'function',
+                        args: ['routePath', 'routeHandler']
                     }
-                }
+                })
             }
         });
     }
