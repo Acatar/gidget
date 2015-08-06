@@ -9,6 +9,10 @@ Hilary.scope('gidget').register({
             start: 'function',
             routeEngine: 'object',
             pipeline: 'object',
+            PipelineEvent: {
+                type: 'function',
+                args: ['event']
+            },
             registerModule: {
                 type: 'function',
                 args: ['gidgetModule']

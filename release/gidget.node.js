@@ -1,4 +1,4 @@
-/*! gidget-builder 2015-08-05 */
+/*! gidget-builder 2015-08-06 */
 var Hilary = require("hilary");
 
 Hilary.scope("gidget").register({
@@ -31,6 +31,10 @@ Hilary.scope("gidget").register({
             start: "function",
             routeEngine: "object",
             pipeline: "object",
+            PipelineEvent: {
+                type: "function",
+                args: [ "event" ]
+            },
             registerModule: {
                 type: "function",
                 args: [ "gidgetModule" ]
@@ -167,6 +171,7 @@ Hilary.scope("gidget").register({
             requiresArguments: "The {func} function requires arguments {args}",
             pipelineRequiresCallback: "A callback function is required to register a pipeline event",
             parseUriRequiresUriString: "A uriString is required to parse a URI",
+            pipelineEventRequiresHandler: "PipelineEvent eventHandler is missing. Did you register an empty PipelineEvent?",
             status404: "Not Found!",
             interfaces: {
                 requiresImplementation: "A valid implementation is required to create a new instance of an interface",
@@ -279,8 +284,8 @@ Hilary.scope("gidget").register({
 
 Hilary.scope("gidget").register({
     name: "GidgetApp",
-    dependencies: [ "IGidgetModule", "argumentValidator", "is" ],
-    factory: function(IGidgetModule, argumentValidator, is) {
+    dependencies: [ "IGidgetModule", "GidgetPipelineEvent", "argumentValidator", "is" ],
+    factory: function(IGidgetModule, GidgetPipelineEvent, argumentValidator, is) {
         "use strict";
         var GidgetApp = function(routeEngine) {
             var self = {
@@ -292,6 +297,7 @@ Hilary.scope("gidget").register({
             self.start = routeEngine.start;
             self.routeEngine = routeEngine;
             self.pipeline = routeEngine.pipeline;
+            self.PipelineEvent = new GidgetPipelineEvent(self.pipeline);
             self.registerModule = function(gidgetModule) {
                 if (!argumentValidator.validate(IGidgetModule, gidgetModule)) {
                     return;
@@ -369,8 +375,8 @@ Hilary.scope("gidget").register({
 
 Hilary.scope("gidget").register({
     name: "GidgetPipeline",
-    dependencies: [ "is", "locale" ],
-    factory: function(is, locale) {
+    dependencies: [ "is", "locale", "exceptions" ],
+    factory: function(is, locale, exceptions) {
         "use strict";
         var Pipeline = function() {
             var self, pipelineEvents, makePipelineTasks, validatePipelineEventCallback;
@@ -420,12 +426,19 @@ Hilary.scope("gidget").register({
             makePipelineTasks = function(pipeline, last) {
                 var i, tasks = [], makeTask = function(i) {
                     return function(err, response) {
+                        var event;
                         if (pipeline.length === i) {
                             if (is.function(last)) {
                                 last(err, response);
                             }
                         } else {
-                            pipeline[i](err, response, makeTask(i + 1));
+                            event = pipeline[i];
+                            event(err, response, makeTask(i + 1));
+                            if (event.once) {
+                                pipeline.splice(i, 1);
+                            } else if (is.function(event.remove) && event.remove(err, response)) {
+                                pipeline.splice(i, 1);
+                            }
                         }
                     };
                 };
@@ -449,9 +462,16 @@ Hilary.scope("gidget").register({
                 }
             };
             self.trigger.on.error = function(errorObject) {
-                var i;
+                var err, i;
+                if (is.object(errorObject)) {
+                    err = exceptions.makeException(errorObject.name, errorObject.message, errorObject);
+                } else if (is.string(errorObject)) {
+                    err = exceptions.makeException(errorObject);
+                } else {
+                    err = errorObject;
+                }
                 for (i = 0; i < pipelineEvents.error.length; i += 1) {
-                    pipelineEvents.error[i](errorObject);
+                    pipelineEvents.error[i](err);
                 }
             };
             self.trigger.before.routeResolution = function(uri, next) {
@@ -522,6 +542,40 @@ Hilary.scope("gidget").register({
             return self;
         };
         return Pipeline;
+    }
+});
+
+Hilary.scope("gidget").register({
+    name: "GidgetPipelineEvent",
+    dependencies: [ "is", "locale" ],
+    factory: function(is, locale) {
+        "use strict";
+        var GidgetPipelineEvent, pipeline;
+        GidgetPipelineEvent = function(event) {
+            var self;
+            event = event || {};
+            if (is.not.function(event.eventHandler)) {
+                self = function() {
+                    pipeline.trigger.on.error({
+                        status: 500,
+                        message: locale.errors.pipelineEventRequiresHandler
+                    });
+                };
+            } else {
+                self = event.eventHandler;
+            }
+            if (is.boolean(event.once)) {
+                self.once = event.once;
+            }
+            if (is.function(event.remove)) {
+                self.remove = event.remove;
+            }
+            return self;
+        };
+        return function(routeEnginePipeline) {
+            pipeline = routeEnginePipeline;
+            return GidgetPipelineEvent;
+        };
     }
 });
 

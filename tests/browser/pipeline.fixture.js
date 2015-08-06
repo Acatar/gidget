@@ -67,7 +67,7 @@ Hilary.scope('gidget-tests').register({
                     });
                 });
 
-            });
+            }); // /before.routeResolution
 
             describe('when after.routeResolution has a registered handler', function () {
                 it('should pass the response into the handler', function (done) {
@@ -98,7 +98,7 @@ Hilary.scope('gidget-tests').register({
                         }
                     });
                 });
-            });
+            }); // /after.routeResolution
 
             describe('when before.routeExecution has a registered handler', function () {
                 it('should be able to modify the params', function (done) {
@@ -130,7 +130,7 @@ Hilary.scope('gidget-tests').register({
                         }
                     });
                 });
-            });
+            }); // /before.routeExecution
 
             describe('when after.routeExecution has a registered handler', function () {
                 it('should receive the response as passed by the route handler', function (done) {
@@ -189,7 +189,7 @@ Hilary.scope('gidget-tests').register({
                         }
                     });
                 });
-            });
+            }); // /after.routeExecution
 
             describe('when on.error has a registered handler', function () {
                 it('should get called, when an error event is triggered', function (done) {
@@ -203,8 +203,8 @@ Hilary.scope('gidget-tests').register({
                             });
 
                             pipeline.on.error(function (err) {
-                                if (err.path === sutPath) {
-                                    expect(err.status).to.equal(500);
+                                if (err.data.path === sutPath) {
+                                    expect(err.data.status).to.equal(500);
                                     gidgetApp.routeEngine.dispose();
                                     done();
                                 }
@@ -220,6 +220,128 @@ Hilary.scope('gidget-tests').register({
                         onComposed: function (err, gidgetApp) {
                             // when
                             gidgetApp.routeEngine.navigate(sutPath, null, false);
+                        }
+                    });
+                });
+            }); // /on.error
+
+            describe('when the once property is true on an event', function () {
+                it('should remove the event from the pipeline', function (done) {
+                    // given
+                    var sutPath = '/pipeline/once',
+                        count = 0;
+
+                    Gidget.Bootstrapper(null, {
+                        composeLifecycle: function (err, gidgetApp, pipeline) {
+                            pipeline.before.routeResolution(new gidgetApp.PipelineEvent({
+                                eventHandler: function (err, uri) {
+                                    if (uri.path === sutPath) {
+                                        count += 1;
+                                    }
+                                },
+                                once: true
+                            }));
+                        },
+                        composeRoutes: function (err, gidgetApp) {
+                            var controller = new Gidget.GidgetModule();
+                            controller.get[sutPath] = function (err, res) {
+
+                            };
+                            gidgetApp.registerModule(controller);
+                        },
+                        onComposed: function (err, gidgetApp) {
+                            // when
+                            gidgetApp.routeEngine.navigate(sutPath, null, false);
+                            gidgetApp.routeEngine.navigate(sutPath, null, false);
+                            gidgetApp.routeEngine.navigate(sutPath, null, false);
+
+                            // then
+                            expect(count).to.equal(1);
+                            done();
+                        }
+                    });
+                });
+            });
+
+            describe('when the remove condition is declared on an event', function () {
+                it('should remove the event from the pipeline when remove returns true', function (done) {
+                    // given
+                    var sutPath = '/pipeline/once',
+                        count = 0;
+
+                    Gidget.Bootstrapper(null, {
+                        composeLifecycle: function (err, gidgetApp, pipeline) {
+                            pipeline.before.routeResolution(new gidgetApp.PipelineEvent({
+                                eventHandler: function (err, uri) {
+                                    if (uri.path === sutPath) {
+                                        count += 1;
+                                    }
+                                },
+                                // remove: when
+                                remove: function (err, uri) {
+                                    if (uri.path === sutPath) {
+                                        return true;
+                                    }
+                                }
+                            }));
+                        },
+                        composeRoutes: function (err, gidgetApp) {
+                            var controller = new Gidget.GidgetModule();
+                            controller.get[sutPath] = function (err, res) {
+
+                            };
+                            gidgetApp.registerModule(controller);
+                        },
+                        onComposed: function (err, gidgetApp) {
+                            // when
+                            gidgetApp.routeEngine.navigate(sutPath, null, false);
+                            gidgetApp.routeEngine.navigate(sutPath, null, false);
+                            gidgetApp.routeEngine.navigate(sutPath, null, false);
+
+                            // then
+                            expect(count).to.equal(1);
+                            done();
+                        }
+                    });
+                });
+
+                it('should NOT remove the event from the pipeline when remove does not return true', function (done) {
+                    // given
+                    var sutPath = '/pipeline/once',
+                        count = 0;
+
+                    Gidget.Bootstrapper(null, {
+                        composeLifecycle: function (err, gidgetApp, pipeline) {
+                            pipeline.before.routeResolution(new gidgetApp.PipelineEvent({
+                                eventHandler: function (err, uri) {
+                                    if (uri.path === sutPath) {
+                                        count += 1;
+                                    }
+                                },
+                                // remove: when
+                                remove: function (err, uri) {
+                                    if (uri.path === sutPath && count === 2) {
+                                        return true;
+                                    }
+                                }
+                            }));
+                        },
+                        composeRoutes: function (err, gidgetApp) {
+                            var controller = new Gidget.GidgetModule();
+                            controller.get[sutPath] = function (err, res) {
+
+                            };
+                            gidgetApp.registerModule(controller);
+                        },
+                        onComposed: function (err, gidgetApp) {
+                            // when
+                            gidgetApp.routeEngine.navigate(sutPath, null, false);
+                            gidgetApp.routeEngine.navigate(sutPath, null, false);
+                            gidgetApp.routeEngine.navigate(sutPath, null, false);
+
+                            // then
+                            expect(count).to.equal(2);
+                            done();
                         }
                     });
                 });

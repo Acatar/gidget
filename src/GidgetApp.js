@@ -1,7 +1,7 @@
 Hilary.scope('gidget').register({
     name: 'GidgetApp',
-    dependencies: ['IGidgetModule', 'argumentValidator', 'is'],
-    factory: function (IGidgetModule, argumentValidator, is) {
+    dependencies: ['IGidgetModule', 'GidgetPipelineEvent', 'argumentValidator', 'is'],
+    factory: function (IGidgetModule, GidgetPipelineEvent, argumentValidator, is) {
         'use strict';
 
         var GidgetApp = function (routeEngine) {
@@ -16,6 +16,7 @@ Hilary.scope('gidget').register({
             self.routeEngine = routeEngine;
 
             self.pipeline = routeEngine.pipeline;
+            self.PipelineEvent = new GidgetPipelineEvent(self.pipeline);
 
             self.registerModule = function (gidgetModule) {
                 if (!argumentValidator.validate(IGidgetModule, gidgetModule)) {

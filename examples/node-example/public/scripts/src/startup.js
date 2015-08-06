@@ -8,100 +8,117 @@
     mainSelector = '#main';
     $main = $(mainSelector);
 
-    new Gidget.Bootstrapper(scope, {
-        configureApplicationContainer: function () {
-            // singletons are stored in local variables
-            var locale,
-                viewEngine,
-                exceptions,
-                is;
-
-            scope.register({ name: 'newGidgetModule',   factory: function () { return new Gidget.GidgetModule(); }});
-            scope.register({ name: 'GidgetRoute',   factory: function () { return Gidget.GidgetRoute; }});
-            scope.register({ name: 'Blueprint',         factory: function () { return Hilary.Blueprint; }});
-
-            scope.register({
-                name: 'is',
-                factory: function () {
-                    if (!is) {
-                        is = scope.getContext().is;
+    Gidget.Bootstrapper(scope, {
+        hilary: {
+            composeLifecycle: function (err, scope, pipeline) {
+                pipeline.on.error(function (err) {
+                    if (err && err.message) {
+                        throw err;
+                    } else if (typeof err === 'string') {
+                        throw new Error(err);
+                    } else {
+                        console.log(err);
                     }
-                    return is;
-                }
+                });
+            },
+            composeModules: function (err, scope) {
+                // singletons are stored in local variables
+                var locale,
+                    viewEngine,
+                    exceptions,
+                    is;
+
+                scope.register({ name: 'newGidgetModule',   factory: function () { return new Gidget.GidgetModule(); }});
+                scope.register({ name: 'GidgetRoute',   factory: function () { return Gidget.GidgetRoute; }});
+                scope.register({ name: 'Blueprint',         factory: function () { return Hilary.Blueprint; }});
+
+                scope.register({
+                    name: 'is',
+                    factory: function () {
+                        if (!is) {
+                            is = scope.getContext().is;
+                        }
+                        return is;
+                    }
+                });
+
+                scope.register({
+                    name: 'locale',
+                    factory: function () {
+                        if (!locale) {
+                            // TODO: Pick the locale based on the user preferences
+                            // and load it separately from the web
+                            locale = scope.resolve('locale::en_US');
+                        }
+
+                        return locale;
+                    }
+                });
+
+                scope.register({
+                    name: 'exceptions',
+                    factory: function () {
+                        if (!exceptions) {
+                            var ExceptionHandler = scope.resolve('ExceptionHandler');
+                            exceptions = new ExceptionHandler(function (exception) {
+                                throw exception;
+                            });
+                        }
+
+                        return exceptions;
+                    }
+                });
+
+                // register a single viewEngine to be used throughout the app
+                scope.register({
+                    name: 'viewEngine',
+                    factory: function () {
+
+                        if (!viewEngine) {
+                            var ViewEngine = scope.resolve('ViewEngine');
+                            viewEngine = new ViewEngine($main);
+                        }
+
+                        return viewEngine;
+                    }
+                });
+            }
+        },
+        composeLifecycle: function (err, gidgetApp, pipeline) {
+            pipeline.before.routeResolution(function (err, uri) {
+                console.log('before route resolution', uri);
             });
 
-            scope.register({
-                name: 'locale',
-                factory: function () {
-                    if (!locale) {
-                        // TODO: Pick the locale based on the user preferences
-                        // and load it separately from the web
-                        locale = scope.resolve('locale::en_US');
-                    }
-
-                    return locale;
-                }
+            pipeline.after.routeResolution(function (err, res) {
+                console.log('after route resolution', res);
             });
 
-            scope.register({
-                name: 'exceptions',
-                factory: function () {
-                    if (!exceptions) {
-                        var ExceptionHandler = scope.resolve('ExceptionHandler');
-                        exceptions = new ExceptionHandler(function (exception) {
-                            throw exception;
-                        });
-                    }
-
-                    return exceptions;
-                }
+            pipeline.before.routeExecution(function (err, res) {
+                console.log('before route execution', res);
             });
 
-            // register a single viewEngine to be used throughout the app
-            scope.register({
-                name: 'viewEngine',
-                factory: function () {
+            pipeline.after.routeExecution(function (err, res) {
+                console.log('after route execution', res);
+            });
 
-                    if (!viewEngine) {
-                        var ViewEngine = scope.resolve('ViewEngine');
-                        viewEngine = new ViewEngine($main);
-                    }
-
-                    return viewEngine;
+            pipeline.on.error(function (err) {
+                if (err && err.message) {
+                    throw err;
+                } else if (typeof err === 'string') {
+                    throw new Error(err);
+                } else {
+                    console.log(err);
                 }
             });
         },
-        configureApplicationLifecycle: function (gidgetApp, pipelines) {
-            pipelines.beforeRouteResolution(function (err, path, next) {
-                console.log('about to resolve the route to:', path);
-                next(null, path);
-            });
-
-            pipelines.afterRouteResolution(function (err, route, next) {
-                console.log('finished resolving route:', route);
-                next(null, route);
-            });
-
-            pipelines.before(function (err, context, next) {
-                console.log('about to navigate to:', context);
-                next(null, context);
-            });
-
-            pipelines.after(function (err, context, next) {
-                console.log('finished navigating to to:', context);
-                next(null, context);
-            });
-
-            pipelines.onError(function (err) {
-                console.log('Gidget Error:', err);
-            });
+        composeRoutes: function (err, gidgetApp) {
+            gidgetApp.registerModule(scope.resolve('homeController'));
+            gidgetApp.registerModule(scope.resolve('breweriesController'));
         },
-        configureRoutes: function (gidget) {
-            gidget.registerModule(scope.resolve('homeController'));
-            gidget.registerModule(scope.resolve('breweriesController'));
-        },
-        start: function () {
-            ko.applyBindings(scope.resolve('viewEngine').mainVM, $main[0]);
+        onComposed: function (err) {
+            if (!err) {
+                ko.applyBindings(scope.resolve('viewEngine').mainVM, $main[0]);
+            }
         }
     });
 

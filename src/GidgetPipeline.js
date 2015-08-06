@@ -1,7 +1,7 @@
 Hilary.scope('gidget').register({
     name: 'GidgetPipeline',
-    dependencies: ['is', 'locale'],
-    factory: function (is, locale) {
+    dependencies: ['is', 'locale', 'exceptions'],
+    factory: function (is, locale, exceptions) {
         'use strict';
 
         var Pipeline = function () {
@@ -59,12 +59,21 @@ Hilary.scope('gidget').register({
                     tasks = [],
                     makeTask = function (i) {
                         return  function (err, response) {
+                            var event;
+
                             if (pipeline.length === i) {
                                 if (is.function(last)) {
                                     last(err, response);
                                 }
                             } else {
-                                pipeline[i](err, response, makeTask((i + 1)));
+                                event = pipeline[i];
+                                event(err, response, makeTask((i + 1)));
+
+                                if (event.once) {
+                                    pipeline.splice(i, 1);
+                                } else if (is.function(event.remove) && event.remove(err, response)) {
+                                    pipeline.splice(i, 1);
+                                }
                             }
                         };
                     };
@@ -95,9 +104,18 @@ Hilary.scope('gidget').register({
             };
 
             self.trigger.on.error = function (errorObject) {
-                var i;
+                var err, i;
+
+                if (is.object(errorObject)) {
+                    err = exceptions.makeException(errorObject.name, errorObject.message, errorObject);
+                } else if (is.string(errorObject)) {
+                    err = exceptions.makeException(errorObject);
+                } else {
+                    err = errorObject;
+                }
+
                 for (i = 0; i < pipelineEvents.error.length; i += 1) {
-                    pipelineEvents.error[i](errorObject);
+                    pipelineEvents.error[i](err);
                 }
             };
 
