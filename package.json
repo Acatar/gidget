@@ -5,7 +5,7 @@
       "install-dependencies": "cd build; npm install; cd ../tests; npm install; cd browser; bower install; cd ../../examples/node-example; npm run install-dependencies"
   },
   "dependencies": {
-      "hilary": "~4.0.1"
+      "hilary": "~4.1.1"
   },
   "repository": {
       "type": "git",

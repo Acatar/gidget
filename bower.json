@@ -8,7 +8,7 @@
     ],
     "description": "A Domain Service Language (DSL) for JavaScript SPAs and Node.js servers inspired by NancyFx and Sinatra",
     "dependencies": {
-        "hilary": "~4.0.1"
+        "hilary": "~4.1.1"
     },
     "moduleType": [
         "globals",
