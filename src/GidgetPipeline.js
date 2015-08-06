@@ -106,8 +106,10 @@ Hilary.scope('gidget').register({
             self.trigger.on.error = function (errorObject) {
                 var err, i;
 
-                if (is.object(errorObject)) {
-                    err = exceptions.makeException(errorObject.name, errorObject.message, errorObject);
+                if (is.object(errorObject) && errorObject.stack) {
+                    err = errorObject;
+                } else if (is.object(errorObject)) {
+                    err = exceptions.makeException(errorObject.name, errorObject.message || locale.errors.defaultMessage, errorObject);
                 } else if (is.string(errorObject)) {
                     err = exceptions.makeException(errorObject);
                 } else {

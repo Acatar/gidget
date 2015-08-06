@@ -2,6 +2,7 @@ Hilary.scope('gidget').register({
     name: 'locale',
     factory: {
         errors: {
+            defaultMessage: 'Gidget Error - see err.data',
             requiresArguments: 'The {func} function requires arguments {args}',
             pipelineRequiresCallback: 'A callback function is required to register a pipeline event',
             parseUriRequiresUriString: 'A uriString is required to parse a URI',
