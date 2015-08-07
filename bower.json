@@ -1,7 +1,7 @@
 {
     "name": "gidget",
     "main": "release/gidget.min.js",
-    "version": "2.1.0",
+    "version": "2.1.1",
     "homepage": "https://github.com/Acatar/gidget",
     "authors": [
         "&y <andes.collab@gmail.com> (https://github.com/losandes)"
