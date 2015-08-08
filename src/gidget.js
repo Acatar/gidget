@@ -1,79 +1,74 @@
 (function (Hilary, scope, exports) {
     'use strict';
 
-    var compose, start;
-
-    /*
-    // Orchestrates composition of the application dependency graph
-    */
-    compose = function (onReady) {
-        var exceptions;
-
-        // perform composition tasks (register modules here)
-        scope.register({ name: 'application', factory: function () { return { compose: compose, start: start }; } });
-        scope.register({ name: 'Blueprint', factory: function () { return Hilary.Blueprint; } });
-        scope.register({ name: 'is', factory: function () { return scope.getContext().is; } });
-
-        scope.register({
-            name: 'exceptions',
-            dependencies: ['ExceptionHandler'],
-            factory: function (ExceptionHandler) {
-                if (!exceptions) {
-                    exceptions = new ExceptionHandler(function (exception) {
-                        if (exception.data) {
-                            console.log(exception.message, exception.data);
-                        } else {
-                            console.log(exception.message);
-                        }
-
-                        throw exception;
-                    });
+    scope.Bootstrapper({
+        composeLifecycle: function (err, scope, pipeline) {
+            pipeline.on.error(function (err) {
+                try {
+                    // try, in case this is triggered before exceptions are registered
+                    scope.resolve('exceptions').throw(err);
+                } catch (e) {
+                    console.log(e);
+                    console.log(err);
                 }
+            });
+        },
+        composeModules: function (err, scope) {
+            var exceptions;
 
-                return exceptions;
-            }
-        });
+            scope.register({ name: 'Blueprint', singleton: true, factory: function () { return Hilary.Blueprint; } });
+            scope.register({ name: 'is', singleton: true, factory: function () { return scope.getContext().is; } });
 
-        scope.register({
-            name: 'Gidget',
-            blueprint: 'IGidget',
-            dependencies: ['IRouteEngine', 'GidgetModule', 'GidgetRoute', 'DefaultGidgetBootstrapper', 'GidgetApp', 'argumentValidator'],
-            factory: function (IRouteEngine, GidgetModule, GidgetRoute, DefaultGidgetBootstrapper, GidgetApp, argumentValidator) {
-                var Gidget = function (options) {
-                    options = options || {};
-                    options.routeEngine = options.routeEngine || scope.resolve('DefaultRouteEngine');
+            scope.register({
+                name: 'exceptions',
+                singleton: true,
+                dependencies: ['ExceptionHandler'],
+                factory: function (ExceptionHandler) {
+                    if (!exceptions) {
+                        exceptions = new ExceptionHandler(function (exception) {
+                            if (exception.data) {
+                                console.log(exception.message, exception.data);
+                            } else {
+                                console.log(exception.message);
+                            }
 
-                    if (!argumentValidator.validate(IRouteEngine, options.routeEngine)) {
-                        return;
+                            throw exception;
+                        });
                     }
 
-                    return new GidgetApp(options.routeEngine);
-                };
+                    return exceptions;
+                }
+            });
 
-                Gidget.GidgetModule = GidgetModule;
-                Gidget.GidgetRoute = GidgetRoute;
-                Gidget.Bootstrapper = DefaultGidgetBootstrapper;
+            scope.register({
+                name: 'Gidget',
+                blueprint: 'IGidget',
+                dependencies: ['IRouteEngine', 'GidgetModule', 'GidgetRoute', 'DefaultGidgetBootstrapper', 'GidgetApp', 'argumentValidator'],
+                factory: function (IRouteEngine, GidgetModule, GidgetRoute, DefaultGidgetBootstrapper, GidgetApp, argumentValidator) {
+                    var Gidget = function (options) {
+                        options = options || {};
+                        options.routeEngine = options.routeEngine || scope.resolve('DefaultRouteEngine');
 
-                return Gidget;
-            }
-        });
+                        if (!argumentValidator.validate(IRouteEngine, options.routeEngine)) {
+                            return;
+                        }
 
-        onReady();
-    };
+                        return new GidgetApp(options.routeEngine);
+                    };
 
-    /*
-    // Orchestrates startup
-    */
-    start = function () {
-        // perform startup tasks (resolve modules here)
-        var Gidget = scope.resolve('Gidget');
+                    Gidget.GidgetModule = GidgetModule;
+                    Gidget.GidgetRoute = GidgetRoute;
+                    Gidget.Bootstrapper = DefaultGidgetBootstrapper;
 
-        exports.Gidget = Gidget;
-    };
+                    return Gidget;
+                }
+            });
+        },
+        onComposed: function (err, scope) {
+            var Gidget = scope.resolve('Gidget');
 
-    //////////////////////////////////////////////////
-    // START IMMEDIATELY
-    // note: we don't use an iffe for start, so it can be registered and the app can be restarted
-    compose(start);
+            exports.Gidget = Gidget;
+        }
+    });
 
 }(Hilary, Hilary.scope('gidget'), (typeof module !== 'undefined' && module.exports) ? module.exports : window));

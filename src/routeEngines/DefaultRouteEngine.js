@@ -11,7 +11,8 @@
                 addEventListeners,
                 clickHandler,
                 popstateHandler,
-                routeEngine;
+                routeEngine,
+                originalTitle;
 
             // PRIVATE members
             (function () {
@@ -35,9 +36,9 @@
                     if (is.string(event.state)) {
                         event.preventDefault();
                         routeEngine.navigate(event.state, null, false);
-                    } else if (is.object(event.state) && is.defined(event.state.path)) {
+                    } else if (is.object(event.state) && is.object(event.state.uri) && is.defined(event.state.uri.path)) {
                         event.preventDefault();
-                        routeEngine.navigate(event.state.path);
+                        routeEngine.navigate(null, event.state, false);
                     }
                 };
 
@@ -49,6 +50,26 @@
 
             // PUBLIC members
             (function () {
+                var makeState = function (path, data) {
+                    var state = data || {},
+                        pathIsLocal;
+
+                    state.uri = state.uri || uriHelper.parseUri(path);
+                    originalTitle = originalTitle || document.title;
+                    state.title = state.title || originalTitle;
+
+                    // if the uri is relative, or if the host matches the current host
+                    // then we are navigating within the SPA
+                    pathIsLocal = !state.uri.host || (state.uri.host === document.location.host);
+
+                    if (!pathIsLocal) {
+                        // we must be leaving the SPA
+                        state.redirect = true;
+                    }
+
+                    return state;
+                };
+
                 // create an instance of BaseRouteEngine and set the
                 // start, navigate and dispose behaviors
                 routeEngine = new RouteEngine({
@@ -56,32 +77,35 @@
                 });
 
                 routeEngine.navigate = function (path, data, pushStateToHistory) {
-                    var state = data || {},
-                        uri = uriHelper.parseUri(path);
+                    var state = makeState(path, data);
 
-                    if (!uri.host || (uri.host === document.location.host)) {
-                        // if the uri is relative, or if the host matches the current host
-                        // then we are navigating within the SPA
-                        state.uri = state.uri || uri;
-                        state.title = state.title || window.title;
-                    } else {
-                        // otherwise, we must be leaving the SPA
+                    if (state.redirect) {
                         window.location = path;
                         return;
                     }
 
-                    if (is.not.defined(pushStateToHistory)) {
-                        // default behavior for history is true
-                        pushStateToHistory = true;
-                    }
-
-                    if (pushStateToHistory) {
-                        // add the state to the browser history (i.e. to support back and forward)
-                        history.pushState(state.uri, state.title, state.uri.relativePath);
-                    }
-
                     // execute the route
-                    routeEngine.resolveAndExecuteRoute(state.uri, 'get');
+                    routeEngine.get(state.uri, function (req) {
+                        var title = req.title || state.title || 'home';
+                        state.title = title;
+
+                        if (pushStateToHistory || is.not.defined(pushStateToHistory)) {
+                            // default behavior for history is true
+                            // add the state to the browser history (i.e. to support back and forward)
+                            history.pushState(state, title, state.uri.relativePath);
+                            document.title = title;
+                        } else {
+                            document.title = title;
+                        }
+                    });
+                };
+
+                routeEngine.updateHistory = function (path, data) {
+                    var state = makeState(path, data),
+                        title = state.title || 'home';
+                    state.title = title;
+                    history.replaceState(state, title, state.uri.relativePath);
+                    document.title = title;
                 };
 
                 routeEngine.dispose = function () {

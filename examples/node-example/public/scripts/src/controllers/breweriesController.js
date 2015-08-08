@@ -5,41 +5,45 @@ Hilary.scope('node-example').register({
         'use strict';
 
         self.get['/breweries/:brewery'] = new GidgetRoute({
-            routeHandler: function (err, res, next) {
+            routeHandler: function (err, req, next) {
+                req.title = req.params.brewery;
+
                 viewEngine.setVM({
                     template: 't-brewery',
                     data: {
                         heading: '/breweries/:brewery',
-                        param0: res.params.splat[0],
-                        brewery: res.params.brewery
+                        param0: req.params.splat[0],
+                        brewery: req.params.brewery
                     }
                 });
 
-                next(err, res);
+                next(err, req);
             },
-            before: function (err, res, next) {
-                console.log('before breweries route', res);
-                next(err, res);
+            before: function (err, req, next) {
+                console.log('before breweries route', req);
+                next(err, req);
             },
-            after: function (err, params, next) {
-                console.log('after breweries route', params);
-                next(err, params);
+            after: function (err, req, next) {
+                console.log('after breweries route', req);
+                next(err, req);
             }
         });
 
-        self.get['/breweries/:brewery/beers/:beer'] = function (err, res, next) {
+        self.get['/breweries/:brewery/beers/:beer'] = function (err, req, next) {
+            req.title = req.params.brewery.concat(' ', req.params.beer);
+
             viewEngine.setVM({
                 template: 't-beer',
                 data: {
                     heading: '/breweries/:brewery/beers/:beer',
-                    param0: res.params.splat[0],
-                    param1: res.params.splat[1],
-                    brewery: res.params.brewery,
-                    beer: res.params.beer
+                    param0: req.params.splat[0],
+                    param1: req.params.splat[1],
+                    brewery: req.params.brewery,
+                    beer: req.params.beer
                 }
             });
 
-            next(err, res);
+            next(err, req);
         };
 
         return self;
