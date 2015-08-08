@@ -215,7 +215,7 @@ Hilary.scope('gidget').register({
                 return false;
             };
 
-            self.resolveAndExecuteRoute = function (path, verb) {
+            self.resolveAndExecuteRoute = function (path, verb, callback) {
                 var uri = uriHelper.parseUri(path),
                     beforeThis,
                     main,
@@ -244,26 +244,30 @@ Hilary.scope('gidget').register({
 
                 afterThis = function (request) {
                     pipeline.trigger.after.routeResolution(null, request, request.callback);
+
+                    if (is.function (callback)) {
+                        callback(request);
+                    }
                 };
 
                 // RUN
                 beforeThis();
             };
 
-            self.get = function (path) {
-                return self.resolveAndExecuteRoute(path, 'get');
+            self.get = function (path, callback) {
+                return self.resolveAndExecuteRoute(path, 'get', callback);
             };
 
-            self.post = function (path) {
-                return self.resolveAndExecuteRoute(path, 'post');
+            self.post = function (path, callback) {
+                return self.resolveAndExecuteRoute(path, 'post', callback);
             };
 
-            self.put = function (path) {
-                return self.resolveAndExecuteRoute(path, 'put');
+            self.put = function (path, callback) {
+                return self.resolveAndExecuteRoute(path, 'put', callback);
             };
 
-            self.del = function (path) {
-                return self.resolveAndExecuteRoute(path, 'del');
+            self.del = function (path, callback) {
+                return self.resolveAndExecuteRoute(path, 'del', callback);
             };
 
             return self;

@@ -19,7 +19,9 @@ Hilary.scope('node-example').register({
 
         // Route with `before` and `after` pipelines
         self.get['/example1'] = new GidgetRoute({
-            routeHandler: function () {
+            routeHandler: function (err, req) {
+                req.title = 'example1';
+
                 viewEngine.setVM({
                     template: 't-empty',
                     data: {
@@ -37,7 +39,9 @@ Hilary.scope('node-example').register({
         });
 
         // Single route handler for a route
-        self.get['/example2'] = function () {
+        self.get['/example2'] = function (err, req) {
+            req.title = 'example2';
+
             viewEngine.setVM({
                 template: 't-empty',
                 data: {

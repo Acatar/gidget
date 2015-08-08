@@ -8,23 +8,27 @@ Hilary.scope('gidget').register({
             __blueprintId: 'IRouteEngine',
             get: {
                 type: 'function',
-                args: ['path']
+                args: ['path', 'callback']
             },
             post: {
                 type: 'function',
-                args: ['path']
+                args: ['path', 'callback']
             },
             put: {
                 type: 'function',
-                args: ['path']
+                args: ['path', 'callback']
             },
             del: {
                 type: 'function',
-                args: ['path']
+                args: ['path', 'callback']
             },
             navigate: {
                 type: 'function',
                 args: ['path', 'data', 'pushStateToHistory']
+            },
+            updateHistory: {
+                type: 'function',
+                args: ['path', 'data']
             },
             register: {
                 type: 'blueprint',
@@ -54,7 +58,7 @@ Hilary.scope('gidget').register({
             },
             resolveAndExecuteRoute: {
                 type: 'function',
-                args: ['path', 'verb']
+                args: ['path', 'verb', 'callback']
             },
             start: 'function',
             dispose: 'function',
