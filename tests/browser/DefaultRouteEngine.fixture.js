@@ -356,6 +356,75 @@ Hilary.scope('gidget-tests').register({
                 });
             });
 
+            describe('when a route sets the title on the request object', function () {
+                it('should update the browser history with that title', function (done) {
+                    // given
+                    var expected = '/register/title',
+                        expectedTitle = 'new title';
+
+                    Gidget.Bootstrapper(null, {
+                        composeRoutes: function (err, gidgetApp) {
+                            var controller = new Gidget.GidgetModule();
+                            controller.get[expected] = function (err, req) {
+                                req.title = expectedTitle;
+                            };
+                            gidgetApp.registerModule(controller);
+                        },
+                        onComposed: function (err, gidgetApp) {
+                            // when
+                            gidgetApp.routeEngine.navigate(expected);
+
+                            // then
+                            expect(document.title).to.equal(expectedTitle);
+                            done();
+                        }
+                    });
+                });
+            });
+
+            describe('when navigate is called with title set on the data object', function () {
+                it('should update the browser history with that title', function (done) {
+                    // given
+                    var expected = '/register/data/title',
+                        expectedTitle = 'new data title';
+
+                    Gidget.Bootstrapper(null, {
+                        composeRoutes: function (err, gidgetApp) {
+                            var controller = new Gidget.GidgetModule();
+                            controller.get[expected] = function (err, req) { };
+                            gidgetApp.registerModule(controller);
+                        },
+                        onComposed: function (err, gidgetApp) {
+                            // when
+                            gidgetApp.routeEngine.navigate(expected, { title: expectedTitle });
+
+                            // then
+                            expect(document.title).to.equal(expectedTitle);
+                            done();
+                        }
+                    });
+                });
+            });
+
+            describe('when updateHistory is called with title set on the data object', function () {
+                it('should update the browser history with that title', function (done) {
+                    // given
+                    var expected = '/set/history/title',
+                        expectedTitle = 'new history title';
+
+                    Gidget.Bootstrapper(null, {
+                        onComposed: function (err, gidgetApp) {
+                            // when
+                            gidgetApp.routeEngine.updateHistory(expected, { title: expectedTitle });
+
+                            // then
+                            expect(document.title).to.equal(expectedTitle);
+                            done();
+                        }
+                    });
+                });
+            });
+
         }); // /DefaultRouteEngine
     }
 });
