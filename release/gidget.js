@@ -1,4 +1,4 @@
-/*! gidget-builder 2015-08-08 */
+/*! gidget-builder 2015-09-21 */
 Hilary.scope("gidget").register({
     name: "IGidget",
     dependencies: [ "Blueprint" ],
@@ -854,7 +854,9 @@ Hilary.scope("gidget").register({
                     routeEngine.navigate(location.href);
                 };
                 clickHandler = function(event) {
-                    if (is.string(event.target.localName) && event.target.localName === "a") {
+                    var isValidHref;
+                    isValidHref = is.string(event.target.localName) && event.target.localName === "a" && event.target.target.length === 0 && event.target.href.length > 0 && !(event.target.href.indexOf("javascript:") > -1 && event.target.href.indexOf("void(") > -1);
+                    if (isValidHref) {
                         event.preventDefault();
                         routeEngine.navigate(event.target.href);
                     }

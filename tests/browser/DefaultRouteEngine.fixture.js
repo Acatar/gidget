@@ -7,7 +7,7 @@ Hilary.scope('gidget-tests').register({
 
         describe('Gidget\'s DefaultRouteEngine', function () {
 
-            describe('when a route resolved', function () {
+            describe('when a route is resolved', function () {
                 it('should return a GidgetResponse', function (done) {
                     // given
                     var path = '/register/callback/GidgetResponse/:response',

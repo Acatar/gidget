@@ -26,7 +26,19 @@
                 };
 
                 clickHandler = function (event) {
-                    if (is.string(event.target.localName) && event.target.localName === 'a') {
+                    var isValidHref;
+
+                    /*jshint ignore:start*/
+                    isValidHref =
+                        is.string(event.target.localName) &&    // make sure we have a tag to reference
+                        event.target.localName === 'a' &&       // and that the tag is an anchor
+                        event.target.target.length === 0 &&     // and that the anchor doesn't set the target
+                        event.target.href.length > 0 &&         // and that the href is not omitted (for firefox)
+                                                                // and that the href is not a javascript void
+                        !(event.target.href.indexOf('javascript:') > -1 && event.target.href.indexOf('void(') > -1);
+                    /*jshint ignore:end*/
+
+                    if (isValidHref) {
                         event.preventDefault();
                         routeEngine.navigate(event.target.href);
                     }
