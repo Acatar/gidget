@@ -9,6 +9,7 @@ Hilary.scope('gidget').register({
                 get: {},
                 post: {},
                 put: {},
+                patch: {},
                 del: {},
                 register: {
                     get: undefined,
@@ -28,6 +29,10 @@ Hilary.scope('gidget').register({
 
             self.register.put = function (routePath, routeHandler) {
                 self.put[routePath] = routeHandler;
+            };
+
+            self.register.patch = function (routePath, routeHandler) {
+                self.patch[routePath] = routeHandler;
             };
 
             self.register.del = function (routePath, routeHandler) {

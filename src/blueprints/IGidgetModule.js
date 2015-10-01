@@ -26,6 +26,10 @@ Hilary.scope('gidget').register({
                         type: 'function',
                         args: ['routePath', 'routeHandler']
                     },
+                    patch: {
+                        type: 'function',
+                        args: ['routePath', 'routeHandler']
+                    },
                     del: {
                         type: 'function',
                         args: ['routePath', 'routeHandler']

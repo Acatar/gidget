@@ -1,5 +1,5 @@
 /*globals describe, it, xdescribe, xit, chai*/
-(function (exports, scope, gidgetScope, describe, it, xdesibe, xit, expect) {
+(function (exports, scope, gidgetScope, describe, it, xdescribe, xit, expect) {
     'use strict';
 
     var compose, start;
@@ -25,6 +25,7 @@
         scope.resolve('gidget.fixture');
         scope.resolve('blueprint.fixture');
         scope.resolve('DefaultRouteEngine.fixture');
+        scope.resolve('BaseRouteEngine.fixture');
         scope.resolve('pipeline.fixture');
         scope.resolve('uriHelper.fixture');
         scope.resolve('GidgetModule.fixture');

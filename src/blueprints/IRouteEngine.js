@@ -12,11 +12,15 @@ Hilary.scope('gidget').register({
             },
             post: {
                 type: 'function',
-                args: ['path', 'callback']
+                args: ['path', 'payload', 'callback']
             },
             put: {
                 type: 'function',
-                args: ['path', 'callback']
+                args: ['path', 'payload', 'callback']
+            },
+            patch: {
+                type: 'function',
+                args: ['path', 'payload', 'callback']
             },
             del: {
                 type: 'function',
@@ -46,6 +50,10 @@ Hilary.scope('gidget').register({
                         type: 'function',
                         args: ['path', 'callback']
                     },
+                    patch: {
+                        type: 'function',
+                        args: ['path', 'callback']
+                    },
                     del: {
                         type: 'function',
                         args: ['path', 'callback']
@@ -54,11 +62,11 @@ Hilary.scope('gidget').register({
             },
             resolveRoute: {
                 type: 'function',
-                args: ['path', 'verb']
+                args: ['path', 'verb', 'payload']
             },
             resolveAndExecuteRoute: {
                 type: 'function',
-                args: ['path', 'verb', 'callback']
+                args: ['path', 'verb', 'callback', 'payload']
             },
             start: 'function',
             dispose: 'function',

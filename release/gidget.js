@@ -1,4 +1,4 @@
-/*! gidget-builder 2015-09-21 */
+/*! gidget-builder 2015-10-01 */
 Hilary.scope("gidget").register({
     name: "IGidget",
     dependencies: [ "Blueprint" ],
@@ -72,6 +72,10 @@ Hilary.scope("gidget").register({
                         type: "function",
                         args: [ "routePath", "routeHandler" ]
                     },
+                    patch: {
+                        type: "function",
+                        args: [ "routePath", "routeHandler" ]
+                    },
                     del: {
                         type: "function",
                         args: [ "routePath", "routeHandler" ]
@@ -107,11 +111,15 @@ Hilary.scope("gidget").register({
             },
             post: {
                 type: "function",
-                args: [ "path", "callback" ]
+                args: [ "path", "payload", "callback" ]
             },
             put: {
                 type: "function",
-                args: [ "path", "callback" ]
+                args: [ "path", "payload", "callback" ]
+            },
+            patch: {
+                type: "function",
+                args: [ "path", "payload", "callback" ]
             },
             del: {
                 type: "function",
@@ -141,6 +149,10 @@ Hilary.scope("gidget").register({
                         type: "function",
                         args: [ "path", "callback" ]
                     },
+                    patch: {
+                        type: "function",
+                        args: [ "path", "callback" ]
+                    },
                     del: {
                         type: "function",
                         args: [ "path", "callback" ]
@@ -149,11 +161,11 @@ Hilary.scope("gidget").register({
             },
             resolveRoute: {
                 type: "function",
-                args: [ "path", "verb" ]
+                args: [ "path", "verb", "payload" ]
             },
             resolveAndExecuteRoute: {
                 type: "function",
-                args: [ "path", "verb", "callback" ]
+                args: [ "path", "verb", "callback", "payload" ]
             },
             start: "function",
             dispose: "function",
@@ -301,7 +313,7 @@ Hilary.scope("gidget").register({
                 if (!argumentValidator.validate(IGidgetModule, gidgetModule)) {
                     return;
                 }
-                var gets = gidgetModule.get, puts = gidgetModule.put, posts = gidgetModule.post, dels = gidgetModule.del, get, put, post, del;
+                var gets = gidgetModule.get, puts = gidgetModule.put, patches = gidgetModule.patch, posts = gidgetModule.post, dels = gidgetModule.del, get, put, patch, post, del;
                 for (get in gets) {
                     if (gets.hasOwnProperty(get)) {
                         routeEngine.register.get(get, gets[get]);
@@ -310,6 +322,11 @@ Hilary.scope("gidget").register({
                 for (put in puts) {
                     if (puts.hasOwnProperty(put)) {
                         routeEngine.register.put(put, puts[put]);
+                    }
+                }
+                for (patch in patches) {
+                    if (patches.hasOwnProperty(patch)) {
+                        routeEngine.register.patch(patch, patches[patch]);
                     }
                 }
                 for (post in posts) {
@@ -347,6 +364,7 @@ Hilary.scope("gidget").register({
                 get: {},
                 post: {},
                 put: {},
+                patch: {},
                 del: {},
                 register: {
                     get: undefined,
@@ -363,6 +381,9 @@ Hilary.scope("gidget").register({
             };
             self.register.put = function(routePath, routeHandler) {
                 self.put[routePath] = routeHandler;
+            };
+            self.register.patch = function(routePath, routeHandler) {
+                self.patch[routePath] = routeHandler;
             };
             self.register.del = function(routePath, routeHandler) {
                 self.del[routePath] = routeHandler;
@@ -606,6 +627,7 @@ Hilary.scope("gidget").register({
             self.route = context.route;
             self.params = context.params;
             self.callback = context.callback;
+            self.payload = context.payload;
         };
     }
 });
@@ -643,12 +665,14 @@ Hilary.scope("gidget").register({
                 get: router.get,
                 post: router.post,
                 put: router.put,
+                patch: router.patch,
                 del: router.del,
                 navigate: router.navigate,
                 register: {
                     get: undefined,
                     post: undefined,
                     put: undefined,
+                    patch: undefined,
                     del: undefined
                 },
                 parseRoute: undefined,
@@ -755,26 +779,30 @@ Hilary.scope("gidget").register({
                 }
                 return params;
             };
-            self.register.get = self.get || function(path, callback) {
+            self.register.get = function(path, callback) {
                 return addRoute("get", path, callback);
             };
-            self.register.post = self.post || function(path, callback) {
+            self.register.post = function(path, callback) {
                 return addRoute("post", path, callback);
             };
-            self.register.put = self.put || function(path, callback) {
+            self.register.put = function(path, callback) {
                 return addRoute("put", path, callback);
             };
-            self.register.del = self.del || function(path, callback) {
+            self.register.patch = function(path, callback) {
+                return addRoute("patch", path, callback);
+            };
+            self.register.del = function(path, callback) {
                 return addRoute("del", path, callback);
             };
-            self.resolveRoute = function(path, verb) {
+            self.resolveRoute = function(path, verb, payload) {
                 var uri = uriHelper.parseUri(path), makeRequest, i;
                 makeRequest = function(uri, matchingRoute) {
                     return new GidgetRequest({
                         route: matchingRoute.route,
                         params: parseParams(uri.path, matchingRoute.route),
                         uri: uri,
-                        callback: matchingRoute.callback
+                        callback: matchingRoute.callback,
+                        payload: payload
                     });
                 };
                 for (i = 0; i < routes.length; i += 1) {
@@ -788,7 +816,7 @@ Hilary.scope("gidget").register({
                 }
                 return false;
             };
-            self.resolveAndExecuteRoute = function(path, verb, callback) {
+            self.resolveAndExecuteRoute = function(path, verb, callback, payload) {
                 var uri = uriHelper.parseUri(path), beforeThis, main, afterThis, request;
                 beforeThis = function() {
                     pipeline.trigger.before.routeResolution(new GidgetRequest({
@@ -800,7 +828,7 @@ Hilary.scope("gidget").register({
                         pipeline.trigger.on.error(err);
                         return;
                     }
-                    request = self.resolveRoute(req.uri, verb);
+                    request = self.resolveRoute(req.uri, verb, payload);
                     if (request === false) {
                         err = {
                             status: 404,
@@ -815,7 +843,7 @@ Hilary.scope("gidget").register({
                 afterThis = function(request) {
                     pipeline.trigger.after.routeResolution(null, request, request.callback);
                     if (is.function(callback)) {
-                        callback(request);
+                        callback(request, payload);
                     }
                 };
                 beforeThis();
@@ -823,11 +851,14 @@ Hilary.scope("gidget").register({
             self.get = function(path, callback) {
                 return self.resolveAndExecuteRoute(path, "get", callback);
             };
-            self.post = function(path, callback) {
-                return self.resolveAndExecuteRoute(path, "post", callback);
+            self.post = function(path, payload, callback) {
+                return self.resolveAndExecuteRoute(path, "post", callback, payload);
             };
-            self.put = function(path, callback) {
-                return self.resolveAndExecuteRoute(path, "put", callback);
+            self.put = function(path, payload, callback) {
+                return self.resolveAndExecuteRoute(path, "put", callback, payload);
+            };
+            self.patch = function(path, payload, callback) {
+                return self.resolveAndExecuteRoute(path, "patch", callback, payload);
             };
             self.del = function(path, callback) {
                 return self.resolveAndExecuteRoute(path, "del", callback);

@@ -1,7 +1,7 @@
 Gidget
 ==========
 
-Gidget is a Domain Service Language (DSL) and RouteEngine for JavaScript SPAs inspired by NancyFx, Sinatra and express.
+Gidget is a Domain Service Language (DSL) and route engine for JavaScript SPAs inspired by NancyFx, Sinatra and express.
 
 ## Getting started
 

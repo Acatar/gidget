@@ -25,10 +25,12 @@ Hilary.scope('gidget').register({
 
                 var gets = gidgetModule.get,
                     puts = gidgetModule.put,
+                    patches = gidgetModule.patch,
                     posts = gidgetModule.post,
                     dels = gidgetModule.del,
                     get,
                     put,
+                    patch,
                     post,
                     del;
 
@@ -41,6 +43,12 @@ Hilary.scope('gidget').register({
                 for (put in puts) {
                     if (puts.hasOwnProperty(put)) {
                         routeEngine.register.put(put, puts[put]);
+                    }
+                }
+
+                for (patch in patches) {
+                    if (patches.hasOwnProperty(patch)) {
+                        routeEngine.register.patch(patch, patches[patch]);
                     }
                 }
 
