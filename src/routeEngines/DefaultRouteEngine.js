@@ -32,7 +32,8 @@
                     isValidHref =
                         is.string(event.target.localName) &&    // make sure we have a tag to reference
                         event.target.localName === 'a' &&       // and that the tag is an anchor
-                        event.target.target.length === 0 &&     // and that the anchor doesn't set the target
+                                                                // and that the anchor target is self or default
+                        (event.target.target.length === 0 || event.target.target === '_self') &&
                         event.target.href.length > 0 &&         // and that the href is not omitted (for firefox)
                                                                 // and that the href is not a javascript void
                         !(event.target.href.indexOf('javascript:') > -1 && event.target.href.indexOf('void(') > -1);

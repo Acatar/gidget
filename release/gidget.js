@@ -886,7 +886,7 @@ Hilary.scope("gidget").register({
                 };
                 clickHandler = function(event) {
                     var isValidHref;
-                    isValidHref = is.string(event.target.localName) && event.target.localName === "a" && event.target.target.length === 0 && event.target.href.length > 0 && !(event.target.href.indexOf("javascript:") > -1 && event.target.href.indexOf("void(") > -1);
+                    isValidHref = is.string(event.target.localName) && event.target.localName === "a" && (event.target.target.length === 0 || event.target.target === "_self") && event.target.href.length > 0 && !(event.target.href.indexOf("javascript:") > -1 && event.target.href.indexOf("void(") > -1);
                     if (isValidHref) {
                         event.preventDefault();
                         routeEngine.navigate(event.target.href);

@@ -72,6 +72,10 @@ Hilary.scope("gidget").register({
                         type: "function",
                         args: [ "routePath", "routeHandler" ]
                     },
+                    patch: {
+                        type: "function",
+                        args: [ "routePath", "routeHandler" ]
+                    },
                     del: {
                         type: "function",
                         args: [ "routePath", "routeHandler" ]
@@ -309,7 +313,7 @@ Hilary.scope("gidget").register({
                 if (!argumentValidator.validate(IGidgetModule, gidgetModule)) {
                     return;
                 }
-                var gets = gidgetModule.get, puts = gidgetModule.put, posts = gidgetModule.post, dels = gidgetModule.del, get, put, post, del;
+                var gets = gidgetModule.get, puts = gidgetModule.put, patches = gidgetModule.patch, posts = gidgetModule.post, dels = gidgetModule.del, get, put, patch, post, del;
                 for (get in gets) {
                     if (gets.hasOwnProperty(get)) {
                         routeEngine.register.get(get, gets[get]);
@@ -318,6 +322,11 @@ Hilary.scope("gidget").register({
                 for (put in puts) {
                     if (puts.hasOwnProperty(put)) {
                         routeEngine.register.put(put, puts[put]);
+                    }
+                }
+                for (patch in patches) {
+                    if (patches.hasOwnProperty(patch)) {
+                        routeEngine.register.patch(patch, patches[patch]);
                     }
                 }
                 for (post in posts) {
@@ -355,6 +364,7 @@ Hilary.scope("gidget").register({
                 get: {},
                 post: {},
                 put: {},
+                patch: {},
                 del: {},
                 register: {
                     get: undefined,
@@ -371,6 +381,9 @@ Hilary.scope("gidget").register({
             };
             self.register.put = function(routePath, routeHandler) {
                 self.put[routePath] = routeHandler;
+            };
+            self.register.patch = function(routePath, routeHandler) {
+                self.patch[routePath] = routeHandler;
             };
             self.register.del = function(routePath, routeHandler) {
                 self.del[routePath] = routeHandler;
@@ -614,6 +627,7 @@ Hilary.scope("gidget").register({
             self.route = context.route;
             self.params = context.params;
             self.callback = context.callback;
+            self.payload = context.payload;
         };
     }
 });
@@ -872,7 +886,7 @@ Hilary.scope("gidget").register({
                 };
                 clickHandler = function(event) {
                     var isValidHref;
-                    isValidHref = is.string(event.target.localName) && event.target.localName === "a" && event.target.target.length === 0 && event.target.href.length > 0 && !(event.target.href.indexOf("javascript:") > -1 && event.target.href.indexOf("void(") > -1);
+                    isValidHref = is.string(event.target.localName) && event.target.localName === "a" && (event.target.target.length === 0 || event.target.target === "_self") && event.target.href.length > 0 && !(event.target.href.indexOf("javascript:") > -1 && event.target.href.indexOf("void(") > -1);
                     if (isValidHref) {
                         event.preventDefault();
                         routeEngine.navigate(event.target.href);
