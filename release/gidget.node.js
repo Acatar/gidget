@@ -1,4 +1,4 @@
-/*! gidget-builder 2015-10-01 */
+/*! gidget-builder 2015-10-06 */
 var Hilary = require("hilary");
 
 Hilary.scope("gidget").register({
@@ -129,7 +129,7 @@ Hilary.scope("gidget").register({
             },
             navigate: {
                 type: "function",
-                args: [ "path", "data", "pushStateToHistory" ]
+                args: [ "pathOrOptions" ]
             },
             updateHistory: {
                 type: "function",
@@ -661,7 +661,7 @@ Hilary.scope("gidget").register({
     factory: function(Route, GidgetRequest, GidgetPipeline, is, uriHelper, locale, exceptions) {
         "use strict";
         var RouteEngine = function(router) {
-            var self, pipeline = new GidgetPipeline(), routes = [], regularExpressions, makeAsyncCallback, makeRouteExecutionQueue, addRoute, cleanseParamNames, parseRoute, parseParams;
+            var self, pipeline = new GidgetPipeline(), routes = [], regularExpressions, makeAsyncCallback, makeRouteExecutionQueue, addRoute, cleanseParamNames, parseRoute, parseParams, runAsync;
             router = router || {};
             self = {
                 get: router.get,
@@ -781,6 +781,12 @@ Hilary.scope("gidget").register({
                 }
                 return params;
             };
+            runAsync = function(handler) {
+                if (is.not.function(handler)) {
+                    exceptions.throwArgumentException(locale.errors.requiresArguments.replace("{func}", "runAsync").replace("{args}", "(handler)"));
+                }
+                setTimeout(handler, 0);
+            };
             self.register.get = function(path, callback) {
                 return addRoute("get", path, callback);
             };
@@ -851,19 +857,29 @@ Hilary.scope("gidget").register({
                 beforeThis();
             };
             self.get = function(path, callback) {
-                return self.resolveAndExecuteRoute(path, "get", callback);
+                runAsync(function() {
+                    self.resolveAndExecuteRoute(path, "get", callback);
+                });
             };
             self.post = function(path, payload, callback) {
-                return self.resolveAndExecuteRoute(path, "post", callback, payload);
+                runAsync(function() {
+                    self.resolveAndExecuteRoute(path, "post", callback, payload);
+                });
             };
             self.put = function(path, payload, callback) {
-                return self.resolveAndExecuteRoute(path, "put", callback, payload);
+                runAsync(function() {
+                    self.resolveAndExecuteRoute(path, "put", callback, payload);
+                });
             };
             self.patch = function(path, payload, callback) {
-                return self.resolveAndExecuteRoute(path, "patch", callback, payload);
+                runAsync(function() {
+                    self.resolveAndExecuteRoute(path, "patch", callback, payload);
+                });
             };
             self.del = function(path, callback) {
-                return self.resolveAndExecuteRoute(path, "del", callback);
+                runAsync(function() {
+                    self.resolveAndExecuteRoute(path, "del", callback);
+                });
             };
             return self;
         };
@@ -909,7 +925,8 @@ Hilary.scope("gidget").register({
                 };
             })();
             (function() {
-                var makeState = function(path, data) {
+                var makeState;
+                makeState = function(path, data) {
                     var state = data || {}, pathIsLocal;
                     state.uri = state.uri || uriHelper.parseUri(path);
                     originalTitle = originalTitle || document.title;
@@ -923,23 +940,34 @@ Hilary.scope("gidget").register({
                 routeEngine = new RouteEngine({
                     start: start
                 });
-                routeEngine.navigate = function(path, data, pushStateToHistory) {
-                    var state = makeState(path, data);
+                routeEngine.navigate = function(pathOrOptions) {
+                    var options = {}, state;
+                    if (is.string(pathOrOptions)) {
+                        options.path = pathOrOptions;
+                    } else {
+                        options = pathOrOptions;
+                    }
+                    options.pushStateToHistory = options.pushStateToHistory || is.not.defined(options.pushStateToHistory);
+                    state = makeState(options.path, options.data);
                     if (state.redirect) {
-                        window.location = path;
+                        window.location = options.path;
                         return;
                     }
                     routeEngine.get(state.uri, function(req) {
                         var title = req.title || state.title || "home";
                         state.title = title;
-                        if (pushStateToHistory || is.not.defined(pushStateToHistory)) {
+                        if (options.pushStateToHistory) {
                             history.pushState(state, title, state.uri.relativePath);
                             document.title = title;
                         } else {
                             document.title = title;
                         }
+                        if (is.function(options.callback)) {
+                            options.callback(req);
+                        }
                     });
                 };
+                routeEngine.redirect = routeEngine.navigate;
                 routeEngine.updateHistory = function(path, data) {
                     var state = makeState(path, data), title = state.title || "home";
                     state.title = title;

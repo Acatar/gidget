@@ -14,7 +14,8 @@ Hilary.scope('gidget').register({
                 addRoute,
                 cleanseParamNames,
                 parseRoute,
-                parseParams;
+                parseParams,
+                runAsync;
 
             router = router || {};
 
@@ -174,6 +175,14 @@ Hilary.scope('gidget').register({
                 return params;
             };
 
+            runAsync = function (handler) {
+                if (is.not.function(handler)) {
+                    exceptions.throwArgumentException(locale.errors.requiresArguments.replace('{func}', 'runAsync').replace('{args}', '(handler)'));
+                }
+
+                setTimeout(handler, 0);
+            };
+
             self.register.get = function (path, callback) {
                 return addRoute('get', path, callback);
             };
@@ -262,48 +271,34 @@ Hilary.scope('gidget').register({
             };
 
             self.get = function (path, callback) {
-                return self.resolveAndExecuteRoute(path, 'get', callback);
+                runAsync(function () {
+                    self.resolveAndExecuteRoute(path, 'get', callback);
+                });
             };
 
             self.post = function (path, payload, callback) {
-                return self.resolveAndExecuteRoute(path, 'post', callback, payload);
+                runAsync(function () {
+                    self.resolveAndExecuteRoute(path, 'post', callback, payload);
+                });
             };
 
             self.put = function (path, payload, callback) {
-                return self.resolveAndExecuteRoute(path, 'put', callback, payload);
+                runAsync(function () {
+                    self.resolveAndExecuteRoute(path, 'put', callback, payload);
+                });
             };
 
             self.patch = function (path, payload, callback) {
-                return self.resolveAndExecuteRoute(path, 'patch', callback, payload);
+                runAsync(function () {
+                    self.resolveAndExecuteRoute(path, 'patch', callback, payload);
+                });
             };
 
             self.del = function (path, callback) {
-                return self.resolveAndExecuteRoute(path, 'del', callback);
+                runAsync(function () {
+                    self.resolveAndExecuteRoute(path, 'del', callback);
+                });
             };
-
-            // routeEngine.navigate = function (path, data, pushStateToHistory) {
-            //     var state = makeState(path, data);
-            //
-            //     if (state.redirect) {
-            //         window.location = path;
-            //         return;
-            //     }
-            //
-            //     // execute the route
-            //     routeEngine.get(state.uri, function (req) {
-            //         var title = req.title || state.title || 'home';
-            //         state.title = title;
-            //
-            //         if (pushStateToHistory || is.not.defined(pushStateToHistory)) {
-            //             // default behavior for history is true
-            //             // add the state to the browser history (i.e. to support back and forward)
-            //             history.pushState(state, title, state.uri.relativePath);
-            //             document.title = title;
-            //         } else {
-            //             document.title = title;
-            //         }
-            //     });
-            // };
 
             return self;
         };

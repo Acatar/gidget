@@ -102,6 +102,7 @@
             });
         },
         composeRoutes: function (err, gidgetApp) {
+            scope.register({ name: 'router',   factory: function () { return gidgetApp.routeEngine; }});
             gidgetApp.registerModule(scope.resolve('homeController'));
             gidgetApp.registerModule(scope.resolve('breweriesController'));
         },

@@ -1,8 +1,8 @@
 /*jshint unused: false*/
 Hilary.scope('gidget-tests').register({
     name: 'pipeline.fixture',
-    dependencies: ['describe', 'it', 'expect', 'xdescribe', 'xit'],
-    factory: function (describe, it, expect, xdescribe, xit) {
+    dependencies: ['describe', 'it', 'expect', 'xdescribe', 'xit', 'async'],
+    factory: function (describe, it, expect, xdescribe, xit, async) {
         'use strict';
 
         describe('Gidget DefaultRouteEngine pipelines', function () {
@@ -250,14 +250,21 @@ Hilary.scope('gidget-tests').register({
                             gidgetApp.registerModule(controller);
                         },
                         onComposed: function (err, gidgetApp) {
-                            // when
-                            gidgetApp.routeEngine.navigate(sutPath, null, false);
-                            gidgetApp.routeEngine.navigate(sutPath, null, false);
-                            gidgetApp.routeEngine.navigate(sutPath, null, false);
+                            // given
+                            var task = function (callback) {
+                                gidgetApp.routeEngine.navigate({
+                                    path: sutPath,
+                                    pushStateToHistory: false,
+                                    callback: callback
+                                });
+                            };
 
-                            // then
-                            expect(count).to.equal(1);
-                            done();
+                            // when
+                            async.series([task, task, task], function (err, results) {
+                                // then
+                                expect(count).to.equal(1);
+                                done();
+                            });
                         }
                     });
                 });
@@ -293,14 +300,21 @@ Hilary.scope('gidget-tests').register({
                             gidgetApp.registerModule(controller);
                         },
                         onComposed: function (err, gidgetApp) {
-                            // when
-                            gidgetApp.routeEngine.navigate(sutPath, null, false);
-                            gidgetApp.routeEngine.navigate(sutPath, null, false);
-                            gidgetApp.routeEngine.navigate(sutPath, null, false);
+                            // given
+                            var task = function (callback) {
+                                gidgetApp.routeEngine.navigate({
+                                    path: sutPath,
+                                    pushStateToHistory: false,
+                                    callback: callback
+                                });
+                            };
 
-                            // then
-                            expect(count).to.equal(1);
-                            done();
+                            // when
+                            async.series([task, task, task], function (err, results) {
+                                // then
+                                expect(count).to.equal(1);
+                                done();
+                            });
                         }
                     });
                 });
@@ -334,14 +348,21 @@ Hilary.scope('gidget-tests').register({
                             gidgetApp.registerModule(controller);
                         },
                         onComposed: function (err, gidgetApp) {
-                            // when
-                            gidgetApp.routeEngine.navigate(sutPath, null, false);
-                            gidgetApp.routeEngine.navigate(sutPath, null, false);
-                            gidgetApp.routeEngine.navigate(sutPath, null, false);
+                            // given
+                            var task = function (callback) {
+                                gidgetApp.routeEngine.navigate({
+                                    path: sutPath,
+                                    pushStateToHistory: false,
+                                    callback: callback
+                                });
+                            };
 
-                            // then
-                            expect(count).to.equal(2);
-                            done();
+                            // when
+                            async.series([task, task, task], function (err, results) {
+                                // then
+                                expect(count).to.equal(1);
+                                done();
+                            });
                         }
                     });
                 });

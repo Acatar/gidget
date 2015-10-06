@@ -372,11 +372,14 @@ Hilary.scope('gidget-tests').register({
                         },
                         onComposed: function (err, gidgetApp) {
                             // when
-                            gidgetApp.routeEngine.navigate(expected);
-
-                            // then
-                            expect(document.title).to.equal(expectedTitle);
-                            done();
+                            gidgetApp.routeEngine.navigate({
+                                path: expected,
+                                callback: function () {
+                                    // then
+                                    expect(document.title).to.equal(expectedTitle);
+                                    done();
+                                }
+                            });
                         }
                     });
                 });
@@ -396,11 +399,15 @@ Hilary.scope('gidget-tests').register({
                         },
                         onComposed: function (err, gidgetApp) {
                             // when
-                            gidgetApp.routeEngine.navigate(expected, { title: expectedTitle });
-
-                            // then
-                            expect(document.title).to.equal(expectedTitle);
-                            done();
+                            gidgetApp.routeEngine.navigate({
+                                path: expected,
+                                data: { title: expectedTitle },
+                                callback: function () {
+                                    // then
+                                    expect(document.title).to.equal(expectedTitle);
+                                    done();
+                                }
+                            });
                         }
                     });
                 });

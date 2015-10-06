@@ -14,6 +14,7 @@ module.exports = function (grunt) {
             files: [
                 'tests/browser/bower_components/jquery/dist/jquery.min.js',
                 'tests/browser/bower_components/hilary/release/hilary.js',
+                'tests/browser/bower_components/async/dist/async.js',
                 // gidget
                 'release/gidget.js',
                 // 'release/gidget.bootstrappers.sammy.min.js',

@@ -63,7 +63,9 @@
 
             // PUBLIC members
             (function () {
-                var makeState = function (path, data) {
+                var makeState;
+
+                makeState = function (path, data) {
                     var state = data || {},
                         pathIsLocal;
 
@@ -89,11 +91,22 @@
                     start: start
                 });
 
-                routeEngine.navigate = function (path, data, pushStateToHistory) {
-                    var state = makeState(path, data);
+                routeEngine.navigate = function (pathOrOptions) {
+                    var options = {},
+                        state;
+
+                    if (is.string(pathOrOptions)) {
+                        options.path = pathOrOptions;
+                    } else {
+                        options = pathOrOptions;
+                    }
+
+                    // default behavior for history is true
+                    options.pushStateToHistory = options.pushStateToHistory || is.not.defined(options.pushStateToHistory);
+                    state = makeState(options.path, options.data);
 
                     if (state.redirect) {
-                        window.location = path;
+                        window.location = options.path;
                         return;
                     }
 
@@ -102,16 +115,27 @@
                         var title = req.title || state.title || 'home';
                         state.title = title;
 
-                        if (pushStateToHistory || is.not.defined(pushStateToHistory)) {
-                            // default behavior for history is true
+                        if (options.pushStateToHistory) {
                             // add the state to the browser history (i.e. to support back and forward)
                             history.pushState(state, title, state.uri.relativePath);
                             document.title = title;
                         } else {
                             document.title = title;
                         }
+
+                        if (is.function(options.callback)) {
+                            options.callback(req);
+                        }
                     });
                 };
+
+                routeEngine.redirect = routeEngine.navigate;
+
+                // routeEngine.redirect = function (path, data, pushStateToHistory) {
+                //     setTimeout(function () {
+                //         routeEngine.navigate(path, data, pushStateToHistory);
+                //     }, 0);
+                // };
 
                 routeEngine.updateHistory = function (path, data) {
                     var state = makeState(path, data),

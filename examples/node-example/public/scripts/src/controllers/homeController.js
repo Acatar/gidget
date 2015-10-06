@@ -1,7 +1,7 @@
 Hilary.scope('node-example').register({
     name: 'homeController',
-    dependencies: ['newGidgetModule', 'GidgetRoute', 'locale', 'viewEngine'],
-    factory: function (self, GidgetRoute, locale, viewEngine) {
+    dependencies: ['newGidgetModule', 'GidgetRoute', 'locale', 'viewEngine', 'router'],
+    factory: function (self, GidgetRoute, locale, viewEngine, router) {
         'use strict';
 
         self.get['/'] = function () {
@@ -41,6 +41,23 @@ Hilary.scope('node-example').register({
         // Single route handler for a route
         self.get['/example2'] = function (err, req) {
             req.title = 'example2';
+
+            viewEngine.setVM({
+                template: 't-empty',
+                data: {
+                    heading: locale.pages.home.empty.heading,
+                    body: '/example2'
+                }
+            });
+        };
+
+        self.get['/example/immediate/navigate'] = function (err, req) {
+            req.title = 'immediate nav';
+            router.navigate('/example/immediate/navigate/2');
+        };
+
+        self.get['/example/immediate/navigate/2'] = function (err, req) {
+            req.title = 'immediate nav 2';
 
             viewEngine.setVM({
                 template: 't-empty',
