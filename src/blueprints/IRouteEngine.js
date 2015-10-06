@@ -28,7 +28,7 @@ Hilary.scope('gidget').register({
             },
             navigate: {
                 type: 'function',
-                args: ['pathOrOptions']
+                args: ['pathOrOptions', 'data', 'pushStateToHistory']
             },
             updateHistory: {
                 type: 'function',

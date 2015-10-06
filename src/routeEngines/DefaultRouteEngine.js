@@ -63,7 +63,27 @@
 
             // PUBLIC members
             (function () {
-                var makeState;
+                var makeOptions,
+                    makeState;
+
+                makeOptions = function (pathOrOptions, data, pushStateToHistory) {
+                    var options = {};
+
+                    if (is.string(pathOrOptions)) {
+                        options.path = pathOrOptions;
+                        options.data = data;
+                        options.pushStateToHistory = pushStateToHistory;
+                    } else {
+                        options = pathOrOptions;
+                        options.data = options.data || data;
+                        options.pushStateToHistory = is.defined(options.pushStateToHistory) ? options.pushStateToHistory : pushStateToHistory;
+                    }
+
+                    // default behavior for history is true
+                    options.pushStateToHistory = options.pushStateToHistory || is.not.defined(options.pushStateToHistory);
+
+                    return options;
+                };
 
                 makeState = function (path, data) {
                     var state = data || {},
@@ -91,19 +111,20 @@
                     start: start
                 });
 
-                routeEngine.navigate = function (pathOrOptions) {
-                    var options = {},
-                        state;
-
-                    if (is.string(pathOrOptions)) {
-                        options.path = pathOrOptions;
-                    } else {
-                        options = pathOrOptions;
-                    }
-
-                    // default behavior for history is true
-                    options.pushStateToHistory = options.pushStateToHistory || is.not.defined(options.pushStateToHistory);
-                    state = makeState(options.path, options.data);
+                /*
+                // navigate [GET] to an endpoint
+                // @param pathOrOptions (string or Object): The path to navigate to, or
+                //          an options object that accepts the following properties:
+                //          * path (string) the path to navigate to
+                //          * data (object) data to put in history, and an optional page title
+                //          * pushStateToHistory (bool): whether or not to add this page to browser history
+                //          * callback (function): a callback function to execute after navigation
+                // @param data (object) data to put in history, and an optional page title
+                // @param pushStateToHistory (bool): whether or not to add this page to browser history
+                */
+                routeEngine.navigate = function (pathOrOptions, data, pushStateToHistory) {
+                    var options = makeOptions(pathOrOptions, data, pushStateToHistory),
+                        state = makeState(options.path, options.data);
 
                     if (state.redirect) {
                         window.location = options.path;

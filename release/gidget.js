@@ -127,7 +127,7 @@ Hilary.scope("gidget").register({
             },
             navigate: {
                 type: "function",
-                args: [ "pathOrOptions" ]
+                args: [ "pathOrOptions", "data", "pushStateToHistory" ]
             },
             updateHistory: {
                 type: "function",
@@ -923,7 +923,21 @@ Hilary.scope("gidget").register({
                 };
             })();
             (function() {
-                var makeState;
+                var makeOptions, makeState;
+                makeOptions = function(pathOrOptions, data, pushStateToHistory) {
+                    var options = {};
+                    if (is.string(pathOrOptions)) {
+                        options.path = pathOrOptions;
+                        options.data = data;
+                        options.pushStateToHistory = pushStateToHistory;
+                    } else {
+                        options = pathOrOptions;
+                        options.data = options.data || data;
+                        options.pushStateToHistory = is.defined(options.pushStateToHistory) ? options.pushStateToHistory : pushStateToHistory;
+                    }
+                    options.pushStateToHistory = options.pushStateToHistory || is.not.defined(options.pushStateToHistory);
+                    return options;
+                };
                 makeState = function(path, data) {
                     var state = data || {}, pathIsLocal;
                     state.uri = state.uri || uriHelper.parseUri(path);
@@ -938,15 +952,8 @@ Hilary.scope("gidget").register({
                 routeEngine = new RouteEngine({
                     start: start
                 });
-                routeEngine.navigate = function(pathOrOptions) {
-                    var options = {}, state;
-                    if (is.string(pathOrOptions)) {
-                        options.path = pathOrOptions;
-                    } else {
-                        options = pathOrOptions;
-                    }
-                    options.pushStateToHistory = options.pushStateToHistory || is.not.defined(options.pushStateToHistory);
-                    state = makeState(options.path, options.data);
+                routeEngine.navigate = function(pathOrOptions, data, pushStateToHistory) {
+                    var options = makeOptions(pathOrOptions, data, pushStateToHistory), state = makeState(options.path, options.data);
                     if (state.redirect) {
                         window.location = options.path;
                         return;
