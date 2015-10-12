@@ -261,8 +261,8 @@ Hilary.scope('gidget').register({
                 afterThis = function (request) {
                     pipeline.trigger.after.routeResolution(null, request, request.callback);
 
-                    if (is.function (callback)) {
-                        callback(request, payload);
+                    if (is.function(callback)) {
+                        callback(null, request, payload);
                     }
                 };
 

@@ -1,4 +1,4 @@
-/*! gidget-builder 2015-10-06 */
+/*! gidget-builder 2015-10-12 */
 var Hilary = require("hilary");
 
 Hilary.scope("gidget").register({
@@ -525,40 +525,52 @@ Hilary.scope("gidget").register({
                 }
             };
             self.before.routeResolution = function(callback) {
+                var cb;
                 if (!validatePipelineEventCallback(callback)) {
                     return;
                 }
-                if (callback.length < 2) {
-                    pipelineEvents.beforeRouteResolution.push(function(path, next) {
-                        callback(path);
-                        next(null, path);
-                    });
+                if (callback.length < 3) {
+                    cb = function(err, req, next) {
+                        callback(null, req);
+                        next(null, req);
+                    };
+                    cb.once = callback.once;
+                    cb.remove = callback.remove;
+                    pipelineEvents.beforeRouteResolution.push(cb);
                 } else {
                     pipelineEvents.beforeRouteResolution.push(callback);
                 }
             };
             self.after.routeResolution = function(callback) {
+                var cb;
                 if (!validatePipelineEventCallback(callback)) {
                     return;
                 }
                 if (callback.length < 3) {
-                    pipelineEvents.afterRouteResolution.push(function(err, route, next) {
+                    cb = function(err, route, next) {
                         callback(err, route);
                         next(null, route);
-                    });
+                    };
+                    cb.once = callback.once;
+                    cb.remove = callback.remove;
+                    pipelineEvents.afterRouteResolution.push(cb);
                 } else {
                     pipelineEvents.afterRouteResolution.push(callback);
                 }
             };
             self.before.routeExecution = function(callback) {
+                var cb;
                 if (!validatePipelineEventCallback(callback)) {
                     return;
                 }
                 if (callback.length < 3) {
-                    pipelineEvents.before.push(function(err, request, next) {
+                    cb = function(err, request, next) {
                         callback(err, request);
                         next(null, request);
-                    });
+                    };
+                    cb.once = callback.once;
+                    cb.remove = callback.remove;
+                    pipelineEvents.before.push(cb);
                 } else {
                     pipelineEvents.before.push(callback);
                 }
@@ -851,7 +863,7 @@ Hilary.scope("gidget").register({
                 afterThis = function(request) {
                     pipeline.trigger.after.routeResolution(null, request, request.callback);
                     if (is.function(callback)) {
-                        callback(request, payload);
+                        callback(null, request, payload);
                     }
                 };
                 beforeThis();
@@ -960,7 +972,7 @@ Hilary.scope("gidget").register({
                         window.location = options.path;
                         return;
                     }
-                    routeEngine.get(state.uri, function(req) {
+                    routeEngine.get(state.uri, function(err, req) {
                         var title = req.title || state.title || "home";
                         state.title = title;
                         if (options.pushStateToHistory) {

@@ -132,7 +132,7 @@
                     }
 
                     // execute the route
-                    routeEngine.get(state.uri, function (req) {
+                    routeEngine.get(state.uri, function (err, req) {
                         var title = req.title || state.title || 'home';
                         state.title = title;
 

@@ -226,21 +226,22 @@ Hilary.scope('gidget-tests').register({
             }); // /on.error
 
             describe('when the once property is true on an event', function () {
-                it('should remove the event from the pipeline', function (done) {
+
+                var onceSpec = function (sutPath, eventFactory, assert) {
                     // given
-                    var sutPath = '/pipeline/once',
-                        count = 0;
+                    var count = 0;
 
                     Gidget.Bootstrapper(null, {
                         composeLifecycle: function (err, gidgetApp, pipeline) {
-                            pipeline.before.routeResolution(new gidgetApp.PipelineEvent({
+                            var handler = new gidgetApp.PipelineEvent({
                                 eventHandler: function (err, req) {
                                     if (req.uri.path === sutPath) {
-                                        count += 1;
+                                        count++;
                                     }
                                 },
                                 once: true
-                            }));
+                            });
+                            eventFactory(pipeline)(handler);
                         },
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
@@ -251,46 +252,96 @@ Hilary.scope('gidget-tests').register({
                         },
                         onComposed: function (err, gidgetApp) {
                             // given
-                            var task = function (callback) {
-                                gidgetApp.routeEngine.navigate({
-                                    path: sutPath,
-                                    pushStateToHistory: false,
-                                    callback: callback
+                            gidgetApp.routeEngine.get(sutPath, function (err) {
+                                if (err) {
+                                    assert(err);
+                                    return;
+                                }
+                                gidgetApp.routeEngine.get(sutPath, function (err) {
+                                    if (err) {
+                                        assert(err);
+                                        return;
+                                    }
+                                    gidgetApp.routeEngine.get(sutPath, function (err, results) {
+                                        assert(err, results, count);
+                                    });
                                 });
-                            };
-
-                            // when
-                            async.series([task, task, task], function (err, results) {
-                                // then
-                                expect(count).to.equal(1);
-                                done();
                             });
                         }
                     });
+                };
+
+                it('should remove the event from the pipeline (pipeline.before.routeResolution)', function (done) {
+                    onceSpec(
+                        '/pipeline/once/before/routeResolution',
+                        function (pipeline) { return pipeline.before.routeResolution; },
+                        function (err, results, count) {
+                            // then
+                            expect(err).to.equal(null);
+                            expect(count).to.equal(1);
+                            done();
+                        }
+                    );
+                });
+
+                it('should remove the event from the pipeline (pipeline.after.routeResolution)', function (done) {
+                    onceSpec(
+                        '/pipeline/once/after/routeResolution',
+                        function (pipeline) { return pipeline.after.routeResolution; },
+                        function (err, results, count) {
+                            // then
+                            expect(count).to.equal(1);
+                            done();
+                        }
+                    );
+                });
+
+                it('should remove the event from the pipeline (pipeline.before.routeExecution)', function (done) {
+                    onceSpec(
+                        '/pipeline/once/before/routeExecution',
+                        function (pipeline) { return pipeline.before.routeExecution; },
+                        function (err, results, count) {
+                            // then
+                            expect(count).to.equal(1);
+                            done();
+                        }
+                    );
+                });
+
+                it('should remove the event from the pipeline (pipeline.after.routeExecution)', function (done) {
+                    onceSpec(
+                        '/pipeline/once/after/routeExecution',
+                        function (pipeline) { return pipeline.after.routeExecution; },
+                        function (err, results, count) {
+                            // then
+                            expect(count).to.equal(1);
+                            done();
+                        }
+                    );
                 });
             });
 
             describe('when the remove condition is declared on an event', function () {
-                it('should remove the event from the pipeline when remove returns true', function (done) {
+                var removeSpec = function (sutPath, eventFactory, assert, remove) {
                     // given
-                    var sutPath = '/pipeline/once',
-                        count = 0;
+                    var count = 0;
 
                     Gidget.Bootstrapper(null, {
                         composeLifecycle: function (err, gidgetApp, pipeline) {
-                            pipeline.before.routeResolution(new gidgetApp.PipelineEvent({
+                            var handler = new gidgetApp.PipelineEvent({
                                 eventHandler: function (err, req) {
                                     if (req.uri.path === sutPath) {
-                                        count += 1;
+                                        count++;
                                     }
                                 },
                                 // remove: when
                                 remove: function (err, req) {
                                     if (req.uri.path === sutPath) {
-                                        return true;
+                                        return remove;
                                     }
                                 }
-                            }));
+                            });
+                            eventFactory(pipeline)(handler);
                         },
                         composeRoutes: function (err, gidgetApp) {
                             var controller = new Gidget.GidgetModule();
@@ -301,70 +352,89 @@ Hilary.scope('gidget-tests').register({
                         },
                         onComposed: function (err, gidgetApp) {
                             // given
-                            var task = function (callback) {
-                                gidgetApp.routeEngine.navigate({
-                                    path: sutPath,
-                                    pushStateToHistory: false,
-                                    callback: callback
+                            gidgetApp.routeEngine.get(sutPath, function (err) {
+                                if (err) {
+                                    assert(err);
+                                    return;
+                                }
+                                gidgetApp.routeEngine.get(sutPath, function (err) {
+                                    if (err) {
+                                        assert(err);
+                                        return;
+                                    }
+                                    gidgetApp.routeEngine.get(sutPath, function (err, results) {
+                                        assert(err, results, count);
+                                    });
                                 });
-                            };
-
-                            // when
-                            async.series([task, task, task], function (err, results) {
-                                // then
-                                expect(count).to.equal(1);
-                                done();
                             });
                         }
                     });
+                };
+
+                it('should remove the event from the pipeline (pipeline.before.routeResolution)', function (done) {
+                    removeSpec(
+                        '/pipeline/remove/before/routeResolution',
+                        function (pipeline) { return pipeline.before.routeResolution; },
+                        function (err, results, count) {
+                            // then
+                            expect(err).to.equal(null);
+                            expect(count).to.equal(1);
+                            done();
+                        },
+                        true
+                    );
+                });
+
+                it('should remove the event from the pipeline (pipeline.after.routeResolution)', function (done) {
+                    removeSpec(
+                        '/pipeline/remove/after/routeResolution',
+                        function (pipeline) { return pipeline.after.routeResolution; },
+                        function (err, results, count) {
+                            // then
+                            expect(count).to.equal(1);
+                            done();
+                        },
+                        true
+                    );
+                });
+
+                it('should remove the event from the pipeline (pipeline.before.routeExecution)', function (done) {
+                    removeSpec(
+                        '/pipeline/remove/before/routeExecution',
+                        function (pipeline) { return pipeline.before.routeExecution; },
+                        function (err, results, count) {
+                            // then
+                            expect(count).to.equal(1);
+                            done();
+                        },
+                        true
+                    );
+                });
+
+                it('should remove the event from the pipeline (pipeline.after.routeExecution)', function (done) {
+                    removeSpec(
+                        '/pipeline/remove/after/routeExecution',
+                        function (pipeline) { return pipeline.after.routeExecution; },
+                        function (err, results, count) {
+                            // then
+                            expect(count).to.equal(1);
+                            done();
+                        },
+                        true
+                    );
                 });
 
                 it('should NOT remove the event from the pipeline when remove does not return true', function (done) {
-                    // given
-                    var sutPath = '/pipeline/once',
-                        count = 0;
-
-                    Gidget.Bootstrapper(null, {
-                        composeLifecycle: function (err, gidgetApp, pipeline) {
-                            pipeline.before.routeResolution(new gidgetApp.PipelineEvent({
-                                eventHandler: function (err, req) {
-                                    if (req.uri.path === sutPath) {
-                                        count += 1;
-                                    }
-                                },
-                                // remove: when
-                                remove: function (err, req) {
-                                    if (req.uri.path === sutPath && count === 2) {
-                                        return true;
-                                    }
-                                }
-                            }));
+                    removeSpec(
+                        '/pipeline/remove/after/routeExecution',
+                        function (pipeline) { return pipeline.after.routeExecution; },
+                        function (err, results, count) {
+                            // then
+                            expect(count).to.equal(3);
+                            done();
                         },
-                        composeRoutes: function (err, gidgetApp) {
-                            var controller = new Gidget.GidgetModule();
-                            controller.get[sutPath] = function (err, req) {
-
-                            };
-                            gidgetApp.registerModule(controller);
-                        },
-                        onComposed: function (err, gidgetApp) {
-                            // given
-                            var task = function (callback) {
-                                gidgetApp.routeEngine.navigate({
-                                    path: sutPath,
-                                    pushStateToHistory: false,
-                                    callback: callback
-                                });
-                            };
-
-                            // when
-                            async.series([task, task, task], function (err, results) {
-                                // then
-                                expect(count).to.equal(1);
-                                done();
-                            });
-                        }
-                    });
+                        false
+                    );
                 });
             });
 
