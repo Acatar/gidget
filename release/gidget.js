@@ -410,7 +410,8 @@ Hilary.scope("gidget").register({
                     routeExecution: undefined
                 },
                 on: {
-                    error: undefined
+                    error: undefined,
+                    scrollToHash: undefined
                 },
                 trigger: {
                     before: {
@@ -431,7 +432,19 @@ Hilary.scope("gidget").register({
                 afterRouteResolution: [],
                 before: [],
                 after: [],
-                error: []
+                error: [],
+                scrollToHash: undefined
+            };
+            pipelineEvents.scrollToHash = function(err, req) {
+                var el;
+                if (req.uri.hash) {
+                    el = document.getElementById(req.uri.hash);
+                    if (el && el.scrollIntoView) {
+                        el.scrollIntoView({
+                            behavior: "smooth"
+                        });
+                    }
+                }
             };
             validatePipelineEventCallback = function(callback) {
                 if (is.not.function(callback)) {
@@ -486,7 +499,9 @@ Hilary.scope("gidget").register({
                 }
             };
             self.trigger.after.routeExecution = function(err, request) {
-                var tasks = makePipelineTasks(pipelineEvents.after);
+                var tasks;
+                pipelineEvents.scrollToHash(err, request);
+                tasks = makePipelineTasks(pipelineEvents.after);
                 if (tasks.length) {
                     tasks[0](err, request);
                 }
@@ -581,6 +596,11 @@ Hilary.scope("gidget").register({
             self.on.error = function(callback) {
                 if (validatePipelineEventCallback(callback)) {
                     pipelineEvents.error.push(callback);
+                }
+            };
+            self.on.scrollToHash = function(callback) {
+                if (validatePipelineEventCallback(callback)) {
+                    pipelineEvents.scrollToHash = callback;
                 }
             };
             return self;
@@ -680,6 +700,7 @@ Hilary.scope("gidget").register({
                 patch: router.patch,
                 del: router.del,
                 navigate: router.navigate,
+                scrollToHash: router.scrollToHash,
                 register: {
                     get: undefined,
                     post: undefined,
@@ -914,7 +935,7 @@ Hilary.scope("gidget").register({
                 };
                 clickHandler = function(event) {
                     var isValidHref;
-                    isValidHref = is.string(event.target.localName) && event.target.localName === "a" && (event.target.target.length === 0 || event.target.target === "_self") && event.target.href.length > 0 && !(event.target.href.indexOf("javascript:") > -1 && event.target.href.indexOf("void(") > -1) && event.target.href.indexOf("#") < 0;
+                    isValidHref = is.string(event.target.localName) && event.target.localName === "a" && (event.target.target.length === 0 || event.target.target === "_self") && event.target.href.length > 0 && !(event.target.href.indexOf("javascript:") > -1 && event.target.href.indexOf("void(") > -1);
                     if (isValidHref) {
                         event.preventDefault();
                         routeEngine.navigate(event.target.href);

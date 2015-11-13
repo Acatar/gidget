@@ -20,7 +20,8 @@ Hilary.scope('gidget').register({
                     routeExecution: undefined
                 },
                 on: {
-                    error: undefined
+                    error: undefined,
+                    scrollToHash: undefined
                 },
                 trigger: {
                     before: {
@@ -42,7 +43,20 @@ Hilary.scope('gidget').register({
                 afterRouteResolution: [],
                 before: [],
                 after: [],
-                error: []
+                error: [],
+                scrollToHash: undefined
+            };
+
+            pipelineEvents.scrollToHash = function (err, req) {
+                var el;
+
+                if (req.uri.hash) {
+                    el = document.getElementById(req.uri.hash);
+
+                    if (el && el.scrollIntoView) {
+                        el.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }
             };
 
             validatePipelineEventCallback = function (callback) {
@@ -109,7 +123,10 @@ Hilary.scope('gidget').register({
             };
 
             self.trigger.after.routeExecution = function (err, request) {
-                var tasks = makePipelineTasks(pipelineEvents.after);
+                var tasks;
+
+                pipelineEvents.scrollToHash(err, request);
+                tasks = makePipelineTasks(pipelineEvents.after);
 
                 if (tasks.length) {
                     tasks[0](err, request);
@@ -205,7 +222,7 @@ Hilary.scope('gidget').register({
                     cb = function (err, request, next) {
                         callback(err, request);
                         next(null, request);
-                    }
+                    };
                     cb.once = callback.once;
                     cb.remove = callback.remove;
 
@@ -224,6 +241,12 @@ Hilary.scope('gidget').register({
             self.on.error = function (callback) {
                 if (validatePipelineEventCallback(callback)) {
                     pipelineEvents.error.push(callback);
+                }
+            };
+
+            self.on.scrollToHash = function (callback) {
+                if (validatePipelineEventCallback(callback)) {
+                    pipelineEvents.scrollToHash = callback;
                 }
             };
 

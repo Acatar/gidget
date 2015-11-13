@@ -36,8 +36,7 @@
                         (event.target.target.length === 0 || event.target.target === '_self') &&
                         event.target.href.length > 0 &&         // and that the href is not omitted (for firefox)
                                                                 // and that the href is not a javascript void
-                        !(event.target.href.indexOf('javascript:') > -1 && event.target.href.indexOf('void(') > -1) &&
-                        event.target.href.indexOf('#') < 0      // and that the href is not to an element on the page
+                        !(event.target.href.indexOf('javascript:') > -1 && event.target.href.indexOf('void(') > -1)
                     ;
                     /*jshint ignore:end*/
 

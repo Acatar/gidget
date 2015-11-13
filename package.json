@@ -1,6 +1,6 @@
 {
   "name": "gidget-solution",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "scripts": {
       "install-dependencies": "cd build; npm install; cd ../tests; npm install; cd browser; bower install; cd ../../examples/node-example; npm run install-dependencies"
   },

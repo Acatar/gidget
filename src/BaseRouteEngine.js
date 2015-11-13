@@ -26,6 +26,7 @@ Hilary.scope('gidget').register({
                 patch: router.patch,
                 del: router.del,
                 navigate: router.navigate,
+                scrollToHash: router.scrollToHash,
                 register: {
                     get: undefined,
                     post: undefined,
