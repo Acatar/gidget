@@ -1,4 +1,4 @@
-/*! gidget-builder 2015-10-12 */
+/*! gidget-builder 2015-11-13 */
 var Hilary = require("hilary");
 
 Hilary.scope("gidget").register({
@@ -916,7 +916,7 @@ Hilary.scope("gidget").register({
                 };
                 clickHandler = function(event) {
                     var isValidHref;
-                    isValidHref = is.string(event.target.localName) && event.target.localName === "a" && (event.target.target.length === 0 || event.target.target === "_self") && event.target.href.length > 0 && !(event.target.href.indexOf("javascript:") > -1 && event.target.href.indexOf("void(") > -1);
+                    isValidHref = is.string(event.target.localName) && event.target.localName === "a" && (event.target.target.length === 0 || event.target.target === "_self") && event.target.href.length > 0 && !(event.target.href.indexOf("javascript:") > -1 && event.target.href.indexOf("void(") > -1) && !event.target.href.indexOf("#") > -1;
                     if (isValidHref) {
                         event.preventDefault();
                         routeEngine.navigate(event.target.href);
