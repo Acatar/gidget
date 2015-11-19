@@ -34,6 +34,25 @@ Hilary.scope('gidget').register({
                 type: 'function',
                 args: ['path', 'data']
             },
+            getHistory: {
+                type: 'function'
+            },
+            getLastRoute: {
+                type: 'function'
+            },
+            back: {
+                type: 'function'
+            },
+            forward: {
+                type: 'function'
+            },
+            go: {
+                type: 'function'
+            },
+            backToTheFuture: {
+                // forwards the user to the last route, so that history is not destroyed
+                type: 'function'
+            },
             register: {
                 type: 'blueprint',
                 blueprint: new Blueprint({

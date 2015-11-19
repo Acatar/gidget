@@ -3,8 +3,8 @@
 
     Hilary.scope('gidget').register({
         name: 'DefaultRouteEngine',
-        dependencies: ['BaseRouteEngine', 'is', 'uriHelper'],
-        factory: function (RouteEngine, is, uriHelper) {
+        dependencies: ['BaseRouteEngine', 'is', 'uriHelper', 'exceptions', 'locale'],
+        factory: function (RouteEngine, is, uriHelper, exceptions, locale) {
 
             var start,
                 onLoad,
@@ -12,7 +12,73 @@
                 clickHandler,
                 popstateHandler,
                 routeEngine,
-                originalTitle;
+                originalTitle,
+                sessionHistory,
+                maxHistorySize = 20,
+                capHistory,
+                updateHistory,
+                replaceHistory,
+                findHistoryIndex,
+                enumerateHistoryIndex,
+                migrateHistory,
+                updateHistoryByIndex,
+                go,
+                navigate,
+                makeNonce;
+
+            // Session History
+            (function () {
+                var makeHistory;
+                sessionHistory = {
+                    back: {},
+                    forward: {}
+                };
+
+                makeHistory = function (name, historyType) {
+                    historyType.getHistory = function () {
+                        var item = sessionStorage.getItem(name);
+
+                        if (item) {
+                            return JSON.parse(item);
+                        }
+
+                        return [];
+                    };
+
+                    historyType.setHistory = function (value) {
+                        sessionStorage.setItem(name, JSON.stringify(value));
+                    };
+
+                    historyType.getLength = function () {
+                        return historyType.getHistory().length;
+                    };
+
+                    historyType.removeLastElement = function () {
+                        var history = historyType.getHistory(),
+                            popped = history.pop();
+                        historyType.setHistory(history);
+                        return popped;
+                    };
+
+                    historyType.removeFirstElement = function () {
+                        var history = historyType.getHistory(),
+                            shifted = history.shift();
+                        historyType.setHistory(history);
+                        return shifted;
+                    };
+
+                    historyType.addAtBeginning = function (value) {
+                        var history = historyType.getHistory();
+                        history.unshift(value);
+                        historyType.setHistory(history);
+                        return history.length;
+                    };
+                };
+
+                makeHistory('gidget::history::back', sessionHistory.back);
+                makeHistory('gidget::history::forward', sessionHistory.forward);
+
+            }());
 
             // PRIVATE members
             (function () {
@@ -26,33 +92,57 @@
                 };
 
                 clickHandler = function (event) {
-                    var isValidHref;
+                    var anchor;
 
-                    /*jshint ignore:start*/
-                    isValidHref =
-                        is.string(event.target.localName) &&    // make sure we have a tag to reference
-                        event.target.localName === 'a' &&       // and that the tag is an anchor
-                                                                // and that the anchor target is self or default
-                        (event.target.target.length === 0 || event.target.target === '_self') &&
-                        event.target.href.length > 0 &&         // and that the href is not omitted (for firefox)
-                                                                // and that the href is not a javascript void
-                        !(event.target.href.indexOf('javascript:') > -1 && event.target.href.indexOf('void(') > -1)
-                    ;
-                    /*jshint ignore:end*/
-
-                    if (isValidHref) {
-                        event.preventDefault();
-                        routeEngine.navigate(event.target.href);
+                    if (event.target.localName === 'a') {
+                        // make sure we have an anchor tag to reference
+                        anchor = event.target;
+                    } else if (event.currentTarget.activeElement.localName === 'a') {
+                        // the event came from an element that is not an anchor (maybe an image)
+                        // make sure we have an anchor tag to reference
+                        anchor = event.currentTarget.activeElement;
+                    } else {
+                        // not sure we should bind to this event
+                        // get out of here
+                        return;
                     }
+
+                    if (anchor.target.length !== 0 && anchor.target !== '_self') {
+                        // If the anchor is targeting something other than self,
+                        // gidget should not handle the route
+                        return;
+                    }
+
+                    if (anchor.href.length < 1) {
+                        // The href is omitted (for firefox)
+                        return;
+                    }
+
+                    if (anchor.href.indexOf('javascript:') > -1 && anchor.href.indexOf('void(') > -1) { //jshint ignore:line
+                        // the href appears to be a javascript void - it probably has a click handler
+                        return;
+                    }
+
+                    // if we got this far, the event should be handled
+                    // by gidget. Take over.
+                    event.preventDefault();
+                    routeEngine.navigate(anchor.href);
                 };
 
                 popstateHandler = function (event) {
+                    var index;
+
                     if (is.string(event.state)) {
                         event.preventDefault();
                         routeEngine.navigate(event.state, null, false);
                     } else if (is.object(event.state) && is.object(event.state.uri) && is.defined(event.state.uri.path)) {
                         event.preventDefault();
                         routeEngine.navigate(null, event.state, false);
+                        index = findHistoryIndex(event.state);
+
+                        if (index) {
+                            updateHistoryByIndex(index, false);
+                        }
                     }
                 };
 
@@ -60,6 +150,156 @@
                     document.addEventListener('click', clickHandler, false);
                     window.addEventListener('popstate', popstateHandler, false);
                 };
+
+                makeNonce = function (templateString) {
+                    templateString = templateString || 'xxxxxxxx';
+
+                    return templateString.replace(/[xy]/g, function (c) {
+                        var r = Math.random() * 16 | 0, v = c === 'x' ? r : r & 3 | 8;
+                        return v.toString(16);
+                    });
+                };
+
+                capHistory = function () {
+                    // cap the internal history at 20 items
+                    if (sessionHistory.back.getLength() > maxHistorySize) {
+                        sessionHistory.back.removeLastElement();
+                    }
+
+                    // cap the internal history at 20 items
+                    if (sessionHistory.forward.getLength() > maxHistorySize) {
+                        sessionHistory.forward.removeLastElement();
+                    }
+                };
+
+                updateHistory = function (state, title, relativePath) {
+                    // push the history to the browser
+                    history.pushState(state, title, relativePath);
+
+                    // push the history to the top of the internal history
+                    sessionHistory.back.addAtBeginning(state);
+                    capHistory();
+                };
+
+                replaceHistory = function (state, title, relativePath) {
+                    history.replaceState(state, title, relativePath);
+
+                    // remove the most recent item from internal history
+                    sessionHistory.back.removeFirstElement();
+
+                    // push the history to the top of the internal history
+                    sessionHistory.back.addAtBeginning(state);
+                };
+
+                findHistoryIndex = function (state) {
+                    var index;
+
+                    if (!state.nonce) {
+                        return;
+                    }
+
+                    // check the backward history
+                    index = enumerateHistoryIndex(sessionHistory.back.getHistory(), state.nonce);
+
+                    if (index >= 0) {
+                        // make sure it's negative
+                        return -(index);
+                    }
+
+                    // check the forward history
+                    index = enumerateHistoryIndex(sessionHistory.forward.getHistory(), state.nonce);
+
+                    if (index >= 0) {
+                        return index;
+                    }
+                };
+
+                enumerateHistoryIndex = function (history, nonce) {
+                    var i;
+
+                    for (i = 0; i < history.length; i += 1) {
+                        if (history[i].nonce === nonce) {
+                            return i;
+                        }
+                    }
+                };
+
+                migrateHistory = function (from, to, count) {
+                    var i;
+
+                    for (i = 0; i < count; i += 1) {
+                        to.addAtBeginning(from.removeFirstElement());
+                    }
+                };
+
+                updateHistoryByIndex = function (index, removeFirstBackItem) {
+                    var state;
+
+                    if (is.not.number(index)) {
+                        exceptions.throwArgumentException(new Error(locale.errors.requiresArguments.replace('{func}', 'go').replace('{args}', '(index)')));
+                        return;
+                    } else if (index > maxHistorySize || index < -(maxHistorySize)) {
+                        exceptions.throwArgumentException(new Error(locale.errors.maxHistorySizeExceededOnGoRequest));
+                    }
+
+                    if (index > 0 && sessionHistory.forward.getLength() >= index) {
+                        // going forward
+                        state = sessionHistory.forward.getHistory()[index - 1];
+                        migrateHistory(sessionHistory.forward, sessionHistory.back, index);
+                    } else if (index < 0 && sessionHistory.back.getLength() >= -(index)) {
+                        // going backward
+                        state = sessionHistory.back.getHistory()[-(index)];
+                        migrateHistory(sessionHistory.back, sessionHistory.forward, -(index));
+                    } else {
+                        exceptions.throwArgumentException(new Error(locale.errors.insufficientHistoryOnGoRequest));
+                        return;
+                    }
+
+                    // remove an additional element from the "from" Array
+                    // because new history will be created
+                    if (removeFirstBackItem !== false) {
+                        sessionHistory.back.removeFirstElement();
+                    }
+
+                    return state;
+                };
+
+                go = function (index) {
+                    var state = updateHistoryByIndex(index);
+
+                    if (state) {
+                        //history.go(index);
+                        navigate(state, {
+                            pushStateToHistory: true,
+                            callback: function () {
+                                capHistory();
+                            }
+                        });
+                    }
+                };
+
+                navigate = function (state, options) {
+                    options = options || {};
+
+                    // execute the route
+                    routeEngine.get(state.uri, function (err, req) {
+                        var title = req.title || state.title || 'home';
+                        state.title = title;
+
+                        if (options.pushStateToHistory) {
+                            // add the state to the browser history (i.e. to support back and forward)
+                            updateHistory(state, title, state.uri.relativePath);
+                            document.title = title;
+                        } else {
+                            document.title = title;
+                        }
+
+                        if (is.function(options.callback)) {
+                            options.callback(req);
+                        }
+                    });
+                };
+
             }());
 
             // PUBLIC members
@@ -75,7 +315,7 @@
                         options.data = data;
                         options.pushStateToHistory = pushStateToHistory;
                     } else {
-                        options = pathOrOptions;
+                        options = pathOrOptions || options;
                         options.data = options.data || data;
                         options.pushStateToHistory = is.defined(options.pushStateToHistory) ? options.pushStateToHistory : pushStateToHistory;
                     }
@@ -93,6 +333,7 @@
                     state.uri = state.uri || uriHelper.parseUri(path);
                     originalTitle = originalTitle || document.title;
                     state.title = state.title || originalTitle;
+                    state.nonce = state.nonce || makeNonce();
 
                     // if the uri is relative, or if the host matches the current host
                     // then we are navigating within the SPA
@@ -133,44 +374,95 @@
                     }
 
                     // execute the route
-                    routeEngine.get(state.uri, function (err, req) {
-                        var title = req.title || state.title || 'home';
-                        state.title = title;
-
-                        if (options.pushStateToHistory) {
-                            // add the state to the browser history (i.e. to support back and forward)
-                            history.pushState(state, title, state.uri.relativePath);
-                            document.title = title;
-                        } else {
-                            document.title = title;
-                        }
-
-                        if (is.function(options.callback)) {
-                            options.callback(req);
-                        }
-                    });
+                    navigate(state, options);
                 };
 
                 routeEngine.redirect = routeEngine.navigate;
-
-                // routeEngine.redirect = function (path, data, pushStateToHistory) {
-                //     setTimeout(function () {
-                //         routeEngine.navigate(path, data, pushStateToHistory);
-                //     }, 0);
-                // };
 
                 routeEngine.updateHistory = function (path, data) {
                     var state = makeState(path, data),
                         title = state.title || 'home';
                     state.title = title;
-                    history.replaceState(state, title, state.uri.relativePath);
+                    replaceHistory(state, title, state.uri.relativePath);
                     document.title = title;
+                };
+
+                /*
+                // Get the last route in the app history
+                */
+                routeEngine.getLastRoute = function () {
+                    return sessionHistory.back.getHistory()[0];
+                };
+
+                /*
+                // Get all of the app history
+                */
+                routeEngine.getHistory = function () {
+                    return sessionHistory.back.getHistory();
+                };
+
+                /*
+                // Get all of the app forward history
+                */
+                routeEngine.getFuture = function () {
+                    return sessionHistory.forward.getHistory();
+                };
+
+                /*
+                // Go back 1 item in the app history
+                */
+                routeEngine.back = function (index) {
+                    if (is.number(index)) {
+                        go(-(index));
+                    } else {
+                        go(-1);
+                    }
+                };
+
+                /*
+                // Forwards the user to the last route, so that history is
+                // not destroyed if you want to take the user back to where
+                // they came from. For instance, when a user closes a card-view
+                // you could use backToTheFuture to take them back to an index of
+                // cards, without needing to know what that index is
+                //
+                // @param options.pushStateToHistory (bool): whether or not to add this page to browser history
+                // @param options.callback (function): a callback function to be executed after the route is executed
+                //
+                // @returns true, if the history is present to support this operation, otherwise false.
+                */
+                routeEngine.backToTheFuture = function (options) {
+                    var state;
+
+                    if (sessionHistory.back.getLength() > 1) {
+                        state = sessionHistory.back.getHistory()[1];
+                        // execute the route
+                        navigate(state, makeOptions(options));
+                        return true;
+                    } else {
+                        return false;
+                    }
+                };
+
+                /*
+                // Go forward 1 item in the app history
+                */
+                routeEngine.forward = function (index) {
+                    go(index || 1);
+                };
+
+                /*
+                // Go to the given index in the app history
+                */
+                routeEngine.go = function (index) {
+                    go(index);
                 };
 
                 routeEngine.dispose = function () {
                     document.removeEventListener('click', clickHandler, false);
                     window.removeEventListener('popstate', popstateHandler, false);
                 };
+
             }());
 
             return routeEngine;

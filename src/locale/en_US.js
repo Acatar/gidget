@@ -8,6 +8,8 @@ Hilary.scope('gidget').register({
             parseUriRequiresUriString: 'A uriString is required to parse a URI',
             pipelineEventRequiresHandler: 'PipelineEvent eventHandler is missing. Did you register an empty PipelineEvent?',
             status404: 'Not Found!',
+            maxHistorySizeExceededOnGoRequest: 'The max history size in gidget is 20 entries',
+            insufficientHistoryOnGoRequest: 'There is insufficient history to support this request',
             interfaces: {
                 requiresImplementation: 'A valid implementation is required to create a new instance of an interface',
                 requiresProperty: 'The implementation is missing a required property: ',

@@ -1,4 +1,4 @@
-/*! gidget-builder 2015-11-13 */
+/*! gidget-builder 2015-11-18 */
 var Hilary = require("hilary");
 
 Hilary.scope("gidget").register({
@@ -135,6 +135,24 @@ Hilary.scope("gidget").register({
                 type: "function",
                 args: [ "path", "data" ]
             },
+            getHistory: {
+                type: "function"
+            },
+            getLastRoute: {
+                type: "function"
+            },
+            back: {
+                type: "function"
+            },
+            forward: {
+                type: "function"
+            },
+            go: {
+                type: "function"
+            },
+            backToTheFuture: {
+                type: "function"
+            },
             register: {
                 type: "blueprint",
                 blueprint: new Blueprint({
@@ -186,6 +204,8 @@ Hilary.scope("gidget").register({
             parseUriRequiresUriString: "A uriString is required to parse a URI",
             pipelineEventRequiresHandler: "PipelineEvent eventHandler is missing. Did you register an empty PipelineEvent?",
             status404: "Not Found!",
+            maxHistorySizeExceededOnGoRequest: "The max history size in gidget is 20 entries",
+            insufficientHistoryOnGoRequest: "There is insufficient history to support this request",
             interfaces: {
                 requiresImplementation: "A valid implementation is required to create a new instance of an interface",
                 requiresProperty: "The implementation is missing a required property: ",
@@ -924,9 +944,49 @@ Hilary.scope("gidget").register({
     "use strict";
     Hilary.scope("gidget").register({
         name: "DefaultRouteEngine",
-        dependencies: [ "BaseRouteEngine", "is", "uriHelper" ],
-        factory: function(RouteEngine, is, uriHelper) {
-            var start, onLoad, addEventListeners, clickHandler, popstateHandler, routeEngine, originalTitle;
+        dependencies: [ "BaseRouteEngine", "is", "uriHelper", "exceptions", "locale" ],
+        factory: function(RouteEngine, is, uriHelper, exceptions, locale) {
+            var start, onLoad, addEventListeners, clickHandler, popstateHandler, routeEngine, originalTitle, sessionHistory, maxHistorySize = 20, capHistory, updateHistory, replaceHistory, findHistoryIndex, enumerateHistoryIndex, migrateHistory, updateHistoryByIndex, go, navigate, makeNonce;
+            (function() {
+                var makeHistory;
+                sessionHistory = {
+                    back: {},
+                    forward: {}
+                };
+                makeHistory = function(name, historyType) {
+                    historyType.getHistory = function() {
+                        var item = sessionStorage.getItem(name);
+                        if (item) {
+                            return JSON.parse(item);
+                        }
+                        return [];
+                    };
+                    historyType.setHistory = function(value) {
+                        sessionStorage.setItem(name, JSON.stringify(value));
+                    };
+                    historyType.getLength = function() {
+                        return historyType.getHistory().length;
+                    };
+                    historyType.removeLastElement = function() {
+                        var history = historyType.getHistory(), popped = history.pop();
+                        historyType.setHistory(history);
+                        return popped;
+                    };
+                    historyType.removeFirstElement = function() {
+                        var history = historyType.getHistory(), shifted = history.shift();
+                        historyType.setHistory(history);
+                        return shifted;
+                    };
+                    historyType.addAtBeginning = function(value) {
+                        var history = historyType.getHistory();
+                        history.unshift(value);
+                        historyType.setHistory(history);
+                        return history.length;
+                    };
+                };
+                makeHistory("gidget::history::back", sessionHistory.back);
+                makeHistory("gidget::history::forward", sessionHistory.forward);
+            })();
             (function() {
                 start = function() {
                     addEventListeners();
@@ -936,25 +996,146 @@ Hilary.scope("gidget").register({
                     routeEngine.navigate(location.href);
                 };
                 clickHandler = function(event) {
-                    var isValidHref;
-                    isValidHref = is.string(event.target.localName) && event.target.localName === "a" && (event.target.target.length === 0 || event.target.target === "_self") && event.target.href.length > 0 && !(event.target.href.indexOf("javascript:") > -1 && event.target.href.indexOf("void(") > -1);
-                    if (isValidHref) {
-                        event.preventDefault();
-                        routeEngine.navigate(event.target.href);
+                    var anchor;
+                    if (event.target.localName === "a") {
+                        anchor = event.target;
+                    } else if (event.currentTarget.activeElement.localName === "a") {
+                        anchor = event.currentTarget.activeElement;
+                    } else {
+                        return;
                     }
+                    if (anchor.target.length !== 0 && anchor.target !== "_self") {
+                        return;
+                    }
+                    if (anchor.href.length < 1) {
+                        return;
+                    }
+                    if (anchor.href.indexOf("javascript:") > -1 && anchor.href.indexOf("void(") > -1) {
+                        return;
+                    }
+                    event.preventDefault();
+                    routeEngine.navigate(anchor.href);
                 };
                 popstateHandler = function(event) {
+                    var index;
                     if (is.string(event.state)) {
                         event.preventDefault();
                         routeEngine.navigate(event.state, null, false);
                     } else if (is.object(event.state) && is.object(event.state.uri) && is.defined(event.state.uri.path)) {
                         event.preventDefault();
                         routeEngine.navigate(null, event.state, false);
+                        index = findHistoryIndex(event.state);
+                        if (index) {
+                            updateHistoryByIndex(index, false);
+                        }
                     }
                 };
                 addEventListeners = function() {
                     document.addEventListener("click", clickHandler, false);
                     window.addEventListener("popstate", popstateHandler, false);
+                };
+                makeNonce = function(templateString) {
+                    templateString = templateString || "xxxxxxxx";
+                    return templateString.replace(/[xy]/g, function(c) {
+                        var r = Math.random() * 16 | 0, v = c === "x" ? r : r & 3 | 8;
+                        return v.toString(16);
+                    });
+                };
+                capHistory = function() {
+                    if (sessionHistory.back.getLength() > maxHistorySize) {
+                        sessionHistory.back.removeLastElement();
+                    }
+                    if (sessionHistory.forward.getLength() > maxHistorySize) {
+                        sessionHistory.forward.removeLastElement();
+                    }
+                };
+                updateHistory = function(state, title, relativePath) {
+                    history.pushState(state, title, relativePath);
+                    sessionHistory.back.addAtBeginning(state);
+                    capHistory();
+                };
+                replaceHistory = function(state, title, relativePath) {
+                    history.replaceState(state, title, relativePath);
+                    sessionHistory.back.removeFirstElement();
+                    sessionHistory.back.addAtBeginning(state);
+                };
+                findHistoryIndex = function(state) {
+                    var index;
+                    if (!state.nonce) {
+                        return;
+                    }
+                    index = enumerateHistoryIndex(sessionHistory.back.getHistory(), state.nonce);
+                    if (index >= 0) {
+                        return -index;
+                    }
+                    index = enumerateHistoryIndex(sessionHistory.forward.getHistory(), state.nonce);
+                    if (index >= 0) {
+                        return index;
+                    }
+                };
+                enumerateHistoryIndex = function(history, nonce) {
+                    var i;
+                    for (i = 0; i < history.length; i += 1) {
+                        if (history[i].nonce === nonce) {
+                            return i;
+                        }
+                    }
+                };
+                migrateHistory = function(from, to, count) {
+                    var i;
+                    for (i = 0; i < count; i += 1) {
+                        to.addAtBeginning(from.removeFirstElement());
+                    }
+                };
+                updateHistoryByIndex = function(index, removeFirstBackItem) {
+                    var state;
+                    if (is.not.number(index)) {
+                        exceptions.throwArgumentException(new Error(locale.errors.requiresArguments.replace("{func}", "go").replace("{args}", "(index)")));
+                        return;
+                    } else if (index > maxHistorySize || index < -maxHistorySize) {
+                        exceptions.throwArgumentException(new Error(locale.errors.maxHistorySizeExceededOnGoRequest));
+                    }
+                    if (index > 0 && sessionHistory.forward.getLength() >= index) {
+                        state = sessionHistory.forward.getHistory()[index - 1];
+                        migrateHistory(sessionHistory.forward, sessionHistory.back, index);
+                    } else if (index < 0 && sessionHistory.back.getLength() >= -index) {
+                        state = sessionHistory.back.getHistory()[-index];
+                        migrateHistory(sessionHistory.back, sessionHistory.forward, -index);
+                    } else {
+                        exceptions.throwArgumentException(new Error(locale.errors.insufficientHistoryOnGoRequest));
+                        return;
+                    }
+                    if (removeFirstBackItem !== false) {
+                        sessionHistory.back.removeFirstElement();
+                    }
+                    return state;
+                };
+                go = function(index) {
+                    var state = updateHistoryByIndex(index);
+                    if (state) {
+                        navigate(state, {
+                            pushStateToHistory: true,
+                            callback: function() {
+                                capHistory();
+                            }
+                        });
+                    }
+                };
+                navigate = function(state, options) {
+                    options = options || {};
+                    routeEngine.get(state.uri, function(err, req) {
+                        var title = req.title || state.title || "home";
+                        state.title = title;
+                        if (options.pushStateToHistory) {
+                            updateHistory(state, title, state.uri.relativePath);
+                            document.title = title;
+                        } else {
+                            document.title = title;
+                        }
+                        if (is.function(options.callback)) {
+                            options.callback(req);
+                        }
+                    });
                 };
             })();
             (function() {
@@ -966,7 +1147,7 @@ Hilary.scope("gidget").register({
                         options.data = data;
                         options.pushStateToHistory = pushStateToHistory;
                     } else {
-                        options = pathOrOptions;
+                        options = pathOrOptions || options;
                         options.data = options.data || data;
                         options.pushStateToHistory = is.defined(options.pushStateToHistory) ? options.pushStateToHistory : pushStateToHistory;
                     }
@@ -978,6 +1159,7 @@ Hilary.scope("gidget").register({
                     state.uri = state.uri || uriHelper.parseUri(path);
                     originalTitle = originalTitle || document.title;
                     state.title = state.title || originalTitle;
+                    state.nonce = state.nonce || makeNonce();
                     pathIsLocal = !state.uri.host || state.uri.host === document.location.host;
                     if (!pathIsLocal) {
                         state.redirect = true;
@@ -993,26 +1175,46 @@ Hilary.scope("gidget").register({
                         window.location = options.path;
                         return;
                     }
-                    routeEngine.get(state.uri, function(err, req) {
-                        var title = req.title || state.title || "home";
-                        state.title = title;
-                        if (options.pushStateToHistory) {
-                            history.pushState(state, title, state.uri.relativePath);
-                            document.title = title;
-                        } else {
-                            document.title = title;
-                        }
-                        if (is.function(options.callback)) {
-                            options.callback(req);
-                        }
-                    });
+                    navigate(state, options);
                 };
                 routeEngine.redirect = routeEngine.navigate;
                 routeEngine.updateHistory = function(path, data) {
                     var state = makeState(path, data), title = state.title || "home";
                     state.title = title;
-                    history.replaceState(state, title, state.uri.relativePath);
+                    replaceHistory(state, title, state.uri.relativePath);
                     document.title = title;
+                };
+                routeEngine.getLastRoute = function() {
+                    return sessionHistory.back.getHistory()[0];
+                };
+                routeEngine.getHistory = function() {
+                    return sessionHistory.back.getHistory();
+                };
+                routeEngine.getFuture = function() {
+                    return sessionHistory.forward.getHistory();
+                };
+                routeEngine.back = function(index) {
+                    if (is.number(index)) {
+                        go(-index);
+                    } else {
+                        go(-1);
+                    }
+                };
+                routeEngine.backToTheFuture = function(options) {
+                    var state;
+                    if (sessionHistory.back.getLength() > 1) {
+                        state = sessionHistory.back.getHistory()[1];
+                        navigate(state, makeOptions(options));
+                        return true;
+                    } else {
+                        return false;
+                    }
+                };
+                routeEngine.forward = function(index) {
+                    go(index || 1);
+                };
+                routeEngine.go = function(index) {
+                    go(index);
                 };
                 routeEngine.dispose = function() {
                     document.removeEventListener("click", clickHandler, false);
