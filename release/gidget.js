@@ -1,4 +1,4 @@
-/*! gidget-builder 2015-11-18 */
+/*! gidget-builder 2015-11-19 */
 Hilary.scope("gidget").register({
     name: "IGidget",
     dependencies: [ "Blueprint" ],
@@ -1402,7 +1402,11 @@ Hilary.scope("gidget").register({
                 });
             }
             uri.host = uri.hostName && uri.port ? uri.hostName.concat(":", uri.port) : uri.hostName;
-            uri.origin = uri.authority && uri.protocol.concat("://", uri.authority.replace(uri.userAndPassword, "").replace("@", ""));
+            if (uri.authority && uri.protocol) {
+                uri.origin = uri.protocol.concat("://", uri.authority.replace(uri.userAndPassword, "").replace("@", ""));
+            } else if (uri.authority) {
+                uri.origin = "https://".concat(uri.authority.replace(uri.userAndPassword, "").replace("@", ""));
+            }
             return uri;
         };
         return self;

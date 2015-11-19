@@ -122,6 +122,20 @@ Hilary.scope('gidget-tests').register({
                 });
             });
 
+            describe('when the path includes host, but not a protocol', function () {
+                it('should use https as the default protocol', function () {
+                    // given
+                    var path = 'google.com',
+                        actual;
+
+                    // when
+                    actual = parseUri(path);
+
+                    // then
+                    expect(actual.origin).to.equal('https://google.com');
+                });
+            });
+
         }); // /uriHelper.parseUri
     }
 });
