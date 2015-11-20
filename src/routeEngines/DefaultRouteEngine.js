@@ -420,7 +420,7 @@
                 };
 
                 /*
-                // Forwards the user to the last route, so that history is
+                // Forwards the user to the last, different route, so that history is
                 // not destroyed if you want to take the user back to where
                 // they came from. For instance, when a user closes a card-view
                 // you could use backToTheFuture to take them back to an index of
@@ -432,15 +432,31 @@
                 // @returns true, if the history is present to support this operation, otherwise false.
                 */
                 routeEngine.backToTheFuture = function (options) {
-                    var state;
+                    var state,
+                        currentUri = uriHelper.parseUri(window.location.href),
+                        hist,
+                        i;
 
-                    if (sessionHistory.back.getLength() > 1) {
-                        state = sessionHistory.back.getHistory()[1];
+                    if (sessionHistory.back.getLength() < 2) {
+                        return false;
+                    }
+
+                    state = sessionHistory.back.getHistory()[1];
+
+                    if (state.uri.path !== currentUri.path) {
                         // execute the route
                         navigate(state, makeOptions(options));
                         return true;
-                    } else {
-                        return false;
+                    }
+
+                    hist = routeEngine.getHistory();
+
+                    for (i = 0; i < hist.length; i += 1) {
+                        if (hist[i].uri.path !== currentUri.path) {
+                            // execute the route
+                            navigate(hist[i], makeOptions(options));
+                            return true;
+                        }
                     }
                 };
 

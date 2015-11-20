@@ -1,4 +1,4 @@
-/*! gidget-builder 2015-11-19 */
+/*! gidget-builder 2015-11-20 */
 Hilary.scope("gidget").register({
     name: "IGidget",
     dependencies: [ "Blueprint" ],
@@ -1199,13 +1199,21 @@ Hilary.scope("gidget").register({
                     }
                 };
                 routeEngine.backToTheFuture = function(options) {
-                    var state;
-                    if (sessionHistory.back.getLength() > 1) {
-                        state = sessionHistory.back.getHistory()[1];
+                    var state, currentUri = uriHelper.parseUri(window.location.href), hist, i;
+                    if (sessionHistory.back.getLength() < 2) {
+                        return false;
+                    }
+                    state = sessionHistory.back.getHistory()[1];
+                    if (state.uri.path !== currentUri.path) {
                         navigate(state, makeOptions(options));
                         return true;
-                    } else {
-                        return false;
+                    }
+                    hist = routeEngine.getHistory();
+                    for (i = 0; i < hist.length; i += 1) {
+                        if (hist[i].uri.path !== currentUri.path) {
+                            navigate(hist[i], makeOptions(options));
+                            return true;
+                        }
                     }
                 };
                 routeEngine.forward = function(index) {
