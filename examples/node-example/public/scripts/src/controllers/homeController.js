@@ -68,6 +68,10 @@ Hilary.scope('node-example').register({
             });
         };
 
+        self.post['/example/post'] = function (err, req) {
+            console.log('post', err, req);
+        };
+
         return self;
     }
 });
