@@ -290,6 +290,9 @@
                             // add the state to the browser history (i.e. to support back and forward)
                             updateHistory(state, title, state.uri.relativePath);
                             document.title = title;
+                        } else if (options.replaceHistory) {
+                            replaceHistory(state, title, state.uri.relativePath);
+                            document.title = title;
                         } else {
                             document.title = title;
                         }
@@ -377,7 +380,21 @@
                     navigate(state, options);
                 };
 
-                routeEngine.redirect = routeEngine.navigate;
+                routeEngine.redirect = function (pathOrOptions, data) {
+                    var options = makeOptions(pathOrOptions, data, false /*pushStateToHistory*/),
+                        state = makeState(options.path, options.data);
+
+                    if (state.redirect) {
+                        window.location = options.path;
+                        return;
+                    }
+
+                    // force the history to be rewritten
+                    options.replaceHistory = true;
+
+                    // execute the route
+                    navigate(state, options);
+                };
 
                 routeEngine.updateHistory = function (path, data) {
                     var state = makeState(path, data),

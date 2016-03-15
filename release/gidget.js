@@ -524,6 +524,9 @@ Hilary.scope("gidget").register({
                         if (options.pushStateToHistory) {
                             updateHistory(state, title, state.uri.relativePath);
                             document.title = title;
+                        } else if (options.replaceHistory) {
+                            replaceHistory(state, title, state.uri.relativePath);
+                            document.title = title;
                         } else {
                             document.title = title;
                         }
@@ -572,7 +575,15 @@ Hilary.scope("gidget").register({
                     }
                     navigate(state, options);
                 };
-                routeEngine.redirect = routeEngine.navigate;
+                routeEngine.redirect = function(pathOrOptions, data) {
+                    var options = makeOptions(pathOrOptions, data, false), state = makeState(options.path, options.data);
+                    if (state.redirect) {
+                        window.location = options.path;
+                        return;
+                    }
+                    options.replaceHistory = true;
+                    navigate(state, options);
+                };
                 routeEngine.updateHistory = function(path, data) {
                     var state = makeState(path, data), title = state.title || "home";
                     state.title = title;
