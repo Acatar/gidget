@@ -14,9 +14,15 @@ module.exports = function (grunt) {
         '../src/blueprints/IGidgetRoute.js',
         '../src/blueprints/IRouteEngine.js',
 
+        '../src/bootstrappers/DefaultGidgetBootstrapper.js',
+
         '../src/locale/en_US.js',
 
+        '../src/routeEngines/DefaultRouteEngine.js',
+        '../src/routeEngines/storage.js',
+
         '../src/argumentValidator.js',
+        '../src/BaseRouteEngine.js',
         '../src/ExceptionHandler.js',
         '../src/GidgetApp.js',
         '../src/GidgetModule.js',
@@ -24,12 +30,10 @@ module.exports = function (grunt) {
         '../src/GidgetPipelineEvent.js',
         '../src/GidgetRequest.js',
         '../src/GidgetRoute.js',
-        '../src/BaseRouteEngine.js',
-        '../src/routeEngines/DefaultRouteEngine.js',
-        '../src/bootstrappers/DefaultGidgetBootstrapper.js',
         '../src/Route.js',
         '../src/uriHelper.js',
-        '../src/Gidget.js',
+
+        '../src/gidget.js',
     ];
 
     nodeFiles = ['../src/node.begin.js'].concat(gidgetFiles);

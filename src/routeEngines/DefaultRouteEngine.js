@@ -3,8 +3,8 @@
 
     Hilary.scope('gidget').register({
         name: 'DefaultRouteEngine',
-        dependencies: ['BaseRouteEngine', 'is', 'uriHelper', 'exceptions', 'locale'],
-        factory: function (RouteEngine, is, uriHelper, exceptions, locale) {
+        dependencies: ['BaseRouteEngine', 'is', 'uriHelper', 'storage', 'exceptions', 'locale'],
+        factory: function (RouteEngine, is, uriHelper, storage, exceptions, locale) {
 
             var start,
                 onLoad,
@@ -36,7 +36,7 @@
 
                 makeHistory = function (name, historyType) {
                     historyType.getHistory = function () {
-                        var item = sessionStorage.getItem(name);
+                        var item = storage.getItem(name);
 
                         if (item) {
                             return JSON.parse(item);
@@ -46,7 +46,7 @@
                     };
 
                     historyType.setHistory = function (value) {
-                        sessionStorage.setItem(name, JSON.stringify(value));
+                        storage.setItem(name, JSON.stringify(value));
                     };
 
                     historyType.getLength = function () {

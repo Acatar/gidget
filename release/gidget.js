@@ -1,4 +1,4 @@
-/*! gidget-builder 2015-11-20 */
+/*! gidget-builder 2016-03-15 */
 Hilary.scope("gidget").register({
     name: "IGidget",
     dependencies: [ "Blueprint" ],
@@ -193,6 +193,124 @@ Hilary.scope("gidget").register({
 });
 
 Hilary.scope("gidget").register({
+    name: "DefaultGidgetBootstrapper",
+    dependencies: [ "is" ],
+    factory: function(is) {
+        "use strict";
+        var Bootstrapper = function(scope, bootstrapper) {
+            var start, composeLifecycle, composeModules, composeRoutes, onComposed, onError;
+            scope = scope || new Hilary();
+            bootstrapper = bootstrapper || {};
+            bootstrapper.options = bootstrapper.options || {};
+            bootstrapper.hilary = bootstrapper.hilary || {};
+            onError = function(err) {
+                console.log(err);
+            };
+            start = function() {
+                if (is.function(bootstrapper.start)) {
+                    bootstrapper.start(null, composeLifecycle);
+                } else {
+                    composeLifecycle(null, new Gidget(bootstrapper.options));
+                }
+            };
+            composeLifecycle = function(err, gidgetApp) {
+                if (err) {
+                    onError(err);
+                }
+                if (is.function(bootstrapper.composeLifecycle) && bootstrapper.composeLifecycle.length === 4) {
+                    bootstrapper.composeLifecycle(err, gidgetApp, gidgetApp.pipeline, composeModules);
+                } else if (is.function(bootstrapper.composeLifecycle)) {
+                    bootstrapper.composeLifecycle(err, gidgetApp, gidgetApp.pipeline);
+                    composeModules(err, gidgetApp);
+                } else {
+                    composeModules(err, gidgetApp);
+                }
+            };
+            composeModules = function(err, gidgetApp) {
+                if (err) {
+                    onError(err);
+                }
+                scope.register({
+                    name: "gidgetApp",
+                    factory: function() {
+                        return gidgetApp;
+                    }
+                });
+                scope.register({
+                    name: "gidgetRouter",
+                    factory: function() {
+                        return gidgetApp.routeEngine;
+                    }
+                });
+                scope.register({
+                    name: "application",
+                    factory: function() {
+                        return {
+                            restart: function() {
+                                start();
+                            }
+                        };
+                    }
+                });
+                if (is.function(bootstrapper.composeModules) && bootstrapper.composeModules.length === 3) {
+                    bootstrapper.composeModules(err, gidgetApp, composeRoutes);
+                } else if (is.function(bootstrapper.composeModules)) {
+                    bootstrapper.composeModules(err, gidgetApp);
+                    composeRoutes(err, gidgetApp);
+                } else {
+                    composeRoutes(err, gidgetApp);
+                }
+            };
+            composeRoutes = function(err, gidgetApp) {
+                if (err) {
+                    onError(err);
+                }
+                if (is.function(bootstrapper.composeRoutes) && bootstrapper.composeRoutes.length === 3) {
+                    bootstrapper.composeRoutes(err, gidgetApp, onComposed);
+                } else if (is.function(bootstrapper.composeRoutes)) {
+                    bootstrapper.composeRoutes(err, gidgetApp);
+                    onComposed(err, gidgetApp);
+                } else {
+                    onComposed(err, gidgetApp);
+                }
+            };
+            onComposed = function(err, gidgetApp) {
+                var startRouteEngine;
+                if (err) {
+                    onError(scope, err);
+                }
+                startRouteEngine = function() {
+                    gidgetApp.routeEngine.start();
+                };
+                if (is.function(bootstrapper.onComposed) && bootstrapper.onComposed.length === 3) {
+                    bootstrapper.onComposed(err, gidgetApp, startRouteEngine);
+                } else if (is.function(bootstrapper.onComposed)) {
+                    bootstrapper.onComposed(err, gidgetApp);
+                    startRouteEngine();
+                } else {
+                    startRouteEngine();
+                }
+            };
+            if (bootstrapper.options.composeHilary !== false) {
+                scope.Bootstrapper({
+                    composeLifecycle: bootstrapper.hilary.composeLifecycle,
+                    composeModules: bootstrapper.hilary.composeModules,
+                    onComposed: function(err, scope) {
+                        if (is.function(bootstrapper.hilary.onComposed)) {
+                            bootstrapper.hilary.onComposed(err, scope);
+                        }
+                        start();
+                    }
+                });
+            } else {
+                start();
+            }
+        };
+        return Bootstrapper;
+    }
+});
+
+Hilary.scope("gidget").register({
     name: "locale",
     factory: {
         errors: {
@@ -217,6 +335,322 @@ Hilary.scope("gidget").register({
     }
 });
 
+(function(Hilary, history) {
+    "use strict";
+    Hilary.scope("gidget").register({
+        name: "DefaultRouteEngine",
+        dependencies: [ "BaseRouteEngine", "is", "uriHelper", "storage", "exceptions", "locale" ],
+        factory: function(RouteEngine, is, uriHelper, storage, exceptions, locale) {
+            var start, onLoad, addEventListeners, clickHandler, popstateHandler, routeEngine, originalTitle, sessionHistory, maxHistorySize = 20, capHistory, updateHistory, replaceHistory, findHistoryIndex, enumerateHistoryIndex, migrateHistory, updateHistoryByIndex, go, navigate, makeNonce;
+            (function() {
+                var makeHistory;
+                sessionHistory = {
+                    back: {},
+                    forward: {}
+                };
+                makeHistory = function(name, historyType) {
+                    historyType.getHistory = function() {
+                        var item = storage.getItem(name);
+                        if (item) {
+                            return JSON.parse(item);
+                        }
+                        return [];
+                    };
+                    historyType.setHistory = function(value) {
+                        storage.setItem(name, JSON.stringify(value));
+                    };
+                    historyType.getLength = function() {
+                        return historyType.getHistory().length;
+                    };
+                    historyType.removeLastElement = function() {
+                        var history = historyType.getHistory(), popped = history.pop();
+                        historyType.setHistory(history);
+                        return popped;
+                    };
+                    historyType.removeFirstElement = function() {
+                        var history = historyType.getHistory(), shifted = history.shift();
+                        historyType.setHistory(history);
+                        return shifted;
+                    };
+                    historyType.addAtBeginning = function(value) {
+                        var history = historyType.getHistory();
+                        history.unshift(value);
+                        historyType.setHistory(history);
+                        return history.length;
+                    };
+                };
+                makeHistory("gidget::history::back", sessionHistory.back);
+                makeHistory("gidget::history::forward", sessionHistory.forward);
+            })();
+            (function() {
+                start = function() {
+                    addEventListeners();
+                    onLoad();
+                };
+                onLoad = function() {
+                    routeEngine.navigate(location.href);
+                };
+                clickHandler = function(event) {
+                    var anchor;
+                    if (event.target.localName === "a") {
+                        anchor = event.target;
+                    } else if (event.currentTarget.activeElement.localName === "a") {
+                        anchor = event.currentTarget.activeElement;
+                    } else {
+                        return;
+                    }
+                    if (anchor.target.length !== 0 && anchor.target !== "_self") {
+                        return;
+                    }
+                    if (anchor.href.length < 1) {
+                        return;
+                    }
+                    if (anchor.href.indexOf("javascript:") > -1 && anchor.href.indexOf("void(") > -1) {
+                        return;
+                    }
+                    event.preventDefault();
+                    routeEngine.navigate(anchor.href);
+                };
+                popstateHandler = function(event) {
+                    var index;
+                    if (is.string(event.state)) {
+                        event.preventDefault();
+                        routeEngine.navigate(event.state, null, false);
+                    } else if (is.object(event.state) && is.object(event.state.uri) && is.defined(event.state.uri.path)) {
+                        event.preventDefault();
+                        routeEngine.navigate(null, event.state, false);
+                        index = findHistoryIndex(event.state);
+                        if (index) {
+                            updateHistoryByIndex(index, false);
+                        }
+                    }
+                };
+                addEventListeners = function() {
+                    document.addEventListener("click", clickHandler, false);
+                    window.addEventListener("popstate", popstateHandler, false);
+                };
+                makeNonce = function(templateString) {
+                    templateString = templateString || "xxxxxxxx";
+                    return templateString.replace(/[xy]/g, function(c) {
+                        var r = Math.random() * 16 | 0, v = c === "x" ? r : r & 3 | 8;
+                        return v.toString(16);
+                    });
+                };
+                capHistory = function() {
+                    if (sessionHistory.back.getLength() > maxHistorySize) {
+                        sessionHistory.back.removeLastElement();
+                    }
+                    if (sessionHistory.forward.getLength() > maxHistorySize) {
+                        sessionHistory.forward.removeLastElement();
+                    }
+                };
+                updateHistory = function(state, title, relativePath) {
+                    history.pushState(state, title, relativePath);
+                    sessionHistory.back.addAtBeginning(state);
+                    capHistory();
+                };
+                replaceHistory = function(state, title, relativePath) {
+                    history.replaceState(state, title, relativePath);
+                    sessionHistory.back.removeFirstElement();
+                    sessionHistory.back.addAtBeginning(state);
+                };
+                findHistoryIndex = function(state) {
+                    var index;
+                    if (!state.nonce) {
+                        return;
+                    }
+                    index = enumerateHistoryIndex(sessionHistory.back.getHistory(), state.nonce);
+                    if (index >= 0) {
+                        return -index;
+                    }
+                    index = enumerateHistoryIndex(sessionHistory.forward.getHistory(), state.nonce);
+                    if (index >= 0) {
+                        return index;
+                    }
+                };
+                enumerateHistoryIndex = function(history, nonce) {
+                    var i;
+                    for (i = 0; i < history.length; i += 1) {
+                        if (history[i].nonce === nonce) {
+                            return i;
+                        }
+                    }
+                };
+                migrateHistory = function(from, to, count) {
+                    var i;
+                    for (i = 0; i < count; i += 1) {
+                        to.addAtBeginning(from.removeFirstElement());
+                    }
+                };
+                updateHistoryByIndex = function(index, removeFirstBackItem) {
+                    var state;
+                    if (is.not.number(index)) {
+                        exceptions.throwArgumentException(new Error(locale.errors.requiresArguments.replace("{func}", "go").replace("{args}", "(index)")));
+                        return;
+                    } else if (index > maxHistorySize || index < -maxHistorySize) {
+                        exceptions.throwArgumentException(new Error(locale.errors.maxHistorySizeExceededOnGoRequest));
+                    }
+                    if (index > 0 && sessionHistory.forward.getLength() >= index) {
+                        state = sessionHistory.forward.getHistory()[index - 1];
+                        migrateHistory(sessionHistory.forward, sessionHistory.back, index);
+                    } else if (index < 0 && sessionHistory.back.getLength() >= -index) {
+                        state = sessionHistory.back.getHistory()[-index];
+                        migrateHistory(sessionHistory.back, sessionHistory.forward, -index);
+                    } else {
+                        exceptions.throwArgumentException(new Error(locale.errors.insufficientHistoryOnGoRequest));
+                        return;
+                    }
+                    if (removeFirstBackItem !== false) {
+                        sessionHistory.back.removeFirstElement();
+                    }
+                    return state;
+                };
+                go = function(index) {
+                    var state = updateHistoryByIndex(index);
+                    if (state) {
+                        navigate(state, {
+                            pushStateToHistory: true,
+                            callback: function() {
+                                capHistory();
+                            }
+                        });
+                    }
+                };
+                navigate = function(state, options) {
+                    options = options || {};
+                    routeEngine.get(state.uri, function(err, req) {
+                        var title = req.title || state.title || "home";
+                        state.title = title;
+                        if (options.pushStateToHistory) {
+                            updateHistory(state, title, state.uri.relativePath);
+                            document.title = title;
+                        } else {
+                            document.title = title;
+                        }
+                        if (is.function(options.callback)) {
+                            options.callback(req);
+                        }
+                    });
+                };
+            })();
+            (function() {
+                var makeOptions, makeState;
+                makeOptions = function(pathOrOptions, data, pushStateToHistory) {
+                    var options = {};
+                    if (is.string(pathOrOptions)) {
+                        options.path = pathOrOptions;
+                        options.data = data;
+                        options.pushStateToHistory = pushStateToHistory;
+                    } else {
+                        options = pathOrOptions || options;
+                        options.data = options.data || data;
+                        options.pushStateToHistory = is.defined(options.pushStateToHistory) ? options.pushStateToHistory : pushStateToHistory;
+                    }
+                    options.pushStateToHistory = options.pushStateToHistory || is.not.defined(options.pushStateToHistory);
+                    return options;
+                };
+                makeState = function(path, data) {
+                    var state = data || {}, pathIsLocal;
+                    state.uri = state.uri || uriHelper.parseUri(path);
+                    originalTitle = originalTitle || document.title;
+                    state.title = state.title || originalTitle;
+                    state.nonce = state.nonce || makeNonce();
+                    pathIsLocal = !state.uri.host || state.uri.host === document.location.host;
+                    if (!pathIsLocal) {
+                        state.redirect = true;
+                    }
+                    return state;
+                };
+                routeEngine = new RouteEngine({
+                    start: start
+                });
+                routeEngine.navigate = function(pathOrOptions, data, pushStateToHistory) {
+                    var options = makeOptions(pathOrOptions, data, pushStateToHistory), state = makeState(options.path, options.data);
+                    if (state.redirect) {
+                        window.location = options.path;
+                        return;
+                    }
+                    navigate(state, options);
+                };
+                routeEngine.redirect = routeEngine.navigate;
+                routeEngine.updateHistory = function(path, data) {
+                    var state = makeState(path, data), title = state.title || "home";
+                    state.title = title;
+                    replaceHistory(state, title, state.uri.relativePath);
+                    document.title = title;
+                };
+                routeEngine.getLastRoute = function() {
+                    return sessionHistory.back.getHistory()[0];
+                };
+                routeEngine.getHistory = function() {
+                    return sessionHistory.back.getHistory();
+                };
+                routeEngine.getFuture = function() {
+                    return sessionHistory.forward.getHistory();
+                };
+                routeEngine.back = function(index) {
+                    if (is.number(index)) {
+                        go(-index);
+                    } else {
+                        go(-1);
+                    }
+                };
+                routeEngine.backToTheFuture = function(options) {
+                    var state, currentUri = uriHelper.parseUri(window.location.href), hist, i;
+                    if (sessionHistory.back.getLength() < 2) {
+                        return false;
+                    }
+                    state = sessionHistory.back.getHistory()[1];
+                    if (state.uri.path !== currentUri.path) {
+                        navigate(state, makeOptions(options));
+                        return true;
+                    }
+                    hist = routeEngine.getHistory();
+                    for (i = 0; i < hist.length; i += 1) {
+                        if (hist[i].uri.path !== currentUri.path) {
+                            navigate(hist[i], makeOptions(options));
+                            return true;
+                        }
+                    }
+                };
+                routeEngine.forward = function(index) {
+                    go(index || 1);
+                };
+                routeEngine.go = function(index) {
+                    go(index);
+                };
+                routeEngine.dispose = function() {
+                    document.removeEventListener("click", clickHandler, false);
+                    window.removeEventListener("popstate", popstateHandler, false);
+                };
+            })();
+            return routeEngine;
+        }
+    });
+})(Hilary, window.history);
+
+Hilary.scope("gidget").register({
+    name: "storage",
+    dependencies: [],
+    factory: function() {
+        "use strict";
+        if (window.sessionStorage && window.sessionStorage.setItem && window.sessionStorage.getItem) {
+            return window.sessionStorage;
+        }
+        var self = {
+            setItem: undefined,
+            getItem: undefined
+        }, storage = {};
+        self.setItem = function(name, payload) {
+            storage[name] = payload;
+        };
+        self.getItem = function(name) {
+            return storage[name];
+        };
+        return self;
+    }
+});
+
 Hilary.scope("gidget").register({
     name: "argumentValidator",
     dependencies: [ "locale", "exceptions" ],
@@ -235,6 +669,239 @@ Hilary.scope("gidget").register({
                 }
             }
         };
+    }
+});
+
+Hilary.scope("gidget").register({
+    name: "BaseRouteEngine",
+    dependencies: [ "Route", "GidgetRequest", "GidgetPipeline", "is", "uriHelper", "locale", "exceptions" ],
+    factory: function(Route, GidgetRequest, GidgetPipeline, is, uriHelper, locale, exceptions) {
+        "use strict";
+        var RouteEngine = function(router) {
+            var self, pipeline = new GidgetPipeline(), routes = [], regularExpressions, makeAsyncCallback, makeRouteExecutionQueue, addRoute, cleanseParamNames, parseRoute, parseParams, runAsync;
+            router = router || {};
+            self = {
+                get: router.get,
+                post: router.post,
+                put: router.put,
+                patch: router.patch,
+                del: router.del,
+                navigate: router.navigate,
+                scrollToHash: router.scrollToHash,
+                register: {
+                    get: undefined,
+                    post: undefined,
+                    put: undefined,
+                    patch: undefined,
+                    del: undefined
+                },
+                parseRoute: undefined,
+                resolveRoute: undefined,
+                resolveAndExecuteRoute: undefined,
+                start: router.start,
+                pipeline: pipeline
+            };
+            regularExpressions = {
+                escapeRegExp: /[-[\]{}()+?.,\\^$|#\s]/g,
+                namedParam: /:(\w+)/g,
+                splatParam: /\*(\w+)/g,
+                firstParam: /(:\w+)|(\*\w+)/,
+                allParams: /(:|\*)\w+/g,
+                extractHash: /^[^#]*(#.*)$/
+            };
+            makeAsyncCallback = function(callback) {
+                if (is.function(callback) && callback.length < 3) {
+                    var asyncCallback = function(err, params, next) {
+                        callback(err, params);
+                        next(err, params);
+                    };
+                    asyncCallback.before = makeAsyncCallback(callback.before);
+                    asyncCallback.after = makeAsyncCallback(callback.after);
+                    return asyncCallback;
+                } else {
+                    return callback;
+                }
+            };
+            makeRouteExecutionQueue = function(callback) {
+                return function(err, request) {
+                    var beforeThis, beforeAll, main, afterThis, afterAll;
+                    beforeThis = function() {
+                        if (is.function(callback.before)) {
+                            callback.before(null, request, beforeAll);
+                        } else {
+                            beforeAll(null, request);
+                        }
+                    };
+                    beforeAll = function(err, request) {
+                        pipeline.trigger.before.routeExecution(err, request, main);
+                    };
+                    main = function(err, request) {
+                        callback(err, request, afterThis);
+                    };
+                    afterThis = function(err, request) {
+                        if (is.function(callback.after)) {
+                            callback.after(err, request, afterAll);
+                        } else {
+                            afterAll(err, request);
+                        }
+                    };
+                    afterAll = function(err, request) {
+                        pipeline.trigger.after.routeExecution(err, request);
+                    };
+                    beforeThis();
+                };
+            };
+            addRoute = function(verb, path, callback) {
+                if (is.not.defined(path) || is.not.function(callback)) {
+                    exceptions.throwArgumentException(locale.errors.requiresArguments.replace("{func}", "addRoute").replace("{args}", "(verb, path, callback)"));
+                }
+                routes.push({
+                    route: parseRoute(verb, path),
+                    callback: makeRouteExecutionQueue(makeAsyncCallback(callback))
+                });
+            };
+            cleanseParamNames = function(names) {
+                if (names !== null) {
+                    var paramNames = [], i;
+                    for (i = 0; i < names.length; i += 1) {
+                        paramNames.push(names[i].substr(1));
+                    }
+                    return paramNames;
+                } else {
+                    return [];
+                }
+            };
+            parseRoute = function(verb, path, caseSensitive) {
+                var params, pattern;
+                pattern = String(path);
+                params = cleanseParamNames(pattern.match(regularExpressions.allParams));
+                pattern = pattern.replace(regularExpressions.escapeRegExp, "\\$&");
+                pattern = pattern.replace(regularExpressions.namedParam, "([^/]+)");
+                pattern = pattern.replace(regularExpressions.splatParam, "(.+?)");
+                return new Route({
+                    expressionString: pattern,
+                    paramNames: params,
+                    verb: verb,
+                    source: path
+                }, caseSensitive);
+            };
+            parseParams = function(path, route) {
+                var params = {}, matches, i;
+                matches = path.match(route.expression);
+                if (is.not.array(matches) || matches.length === 1) {
+                    params.splat = [];
+                    return params;
+                }
+                matches.shift();
+                params.splat = matches;
+                for (i = 0; i < route.paramNames.length; i += 1) {
+                    params[route.paramNames[i]] = params.splat[i];
+                }
+                return params;
+            };
+            runAsync = function(handler) {
+                if (is.not.function(handler)) {
+                    exceptions.throwArgumentException(locale.errors.requiresArguments.replace("{func}", "runAsync").replace("{args}", "(handler)"));
+                }
+                setTimeout(handler, 0);
+            };
+            self.register.get = function(path, callback) {
+                return addRoute("get", path, callback);
+            };
+            self.register.post = function(path, callback) {
+                return addRoute("post", path, callback);
+            };
+            self.register.put = function(path, callback) {
+                return addRoute("put", path, callback);
+            };
+            self.register.patch = function(path, callback) {
+                return addRoute("patch", path, callback);
+            };
+            self.register.del = function(path, callback) {
+                return addRoute("del", path, callback);
+            };
+            self.resolveRoute = function(path, verb, payload) {
+                var uri = uriHelper.parseUri(path), makeRequest, i;
+                makeRequest = function(uri, matchingRoute) {
+                    return new GidgetRequest({
+                        route: matchingRoute.route,
+                        params: parseParams(uri.path, matchingRoute.route),
+                        uri: uri,
+                        callback: matchingRoute.callback,
+                        payload: payload
+                    });
+                };
+                for (i = 0; i < routes.length; i += 1) {
+                    if (routes[i].route.expression.test(uri.path)) {
+                        if (!verb) {
+                            return makeRequest(uri, routes[i]);
+                        } else if (routes[i].route.verb === verb) {
+                            return makeRequest(uri, routes[i]);
+                        }
+                    }
+                }
+                return false;
+            };
+            self.resolveAndExecuteRoute = function(path, verb, callback, payload) {
+                var uri = uriHelper.parseUri(path), beforeThis, main, afterThis, request;
+                beforeThis = function() {
+                    pipeline.trigger.before.routeResolution(new GidgetRequest({
+                        uri: uri
+                    }), main);
+                };
+                main = function(err, req) {
+                    if (err) {
+                        pipeline.trigger.on.error(err);
+                        return;
+                    }
+                    request = self.resolveRoute(req.uri, verb, payload);
+                    if (request === false) {
+                        err = {
+                            status: 404,
+                            message: locale.errors.status404,
+                            uri: uri
+                        };
+                        pipeline.trigger.on.error(err);
+                    } else if (is.function(request.callback)) {
+                        afterThis(request);
+                    }
+                };
+                afterThis = function(request) {
+                    pipeline.trigger.after.routeResolution(null, request, request.callback);
+                    if (is.function(callback)) {
+                        callback(null, request, payload);
+                    }
+                };
+                beforeThis();
+            };
+            self.get = function(path, callback) {
+                runAsync(function() {
+                    self.resolveAndExecuteRoute(path, "get", callback);
+                });
+            };
+            self.post = function(path, payload, callback) {
+                runAsync(function() {
+                    self.resolveAndExecuteRoute(path, "post", callback, payload);
+                });
+            };
+            self.put = function(path, payload, callback) {
+                runAsync(function() {
+                    self.resolveAndExecuteRoute(path, "put", callback, payload);
+                });
+            };
+            self.patch = function(path, payload, callback) {
+                runAsync(function() {
+                    self.resolveAndExecuteRoute(path, "patch", callback, payload);
+                });
+            };
+            self.del = function(path, callback) {
+                runAsync(function() {
+                    self.resolveAndExecuteRoute(path, "del", callback);
+                });
+            };
+            return self;
+        };
+        return RouteEngine;
     }
 });
 
@@ -702,651 +1369,6 @@ Hilary.scope("gidget").register({
             }
             return self;
         };
-    }
-});
-
-Hilary.scope("gidget").register({
-    name: "BaseRouteEngine",
-    dependencies: [ "Route", "GidgetRequest", "GidgetPipeline", "is", "uriHelper", "locale", "exceptions" ],
-    factory: function(Route, GidgetRequest, GidgetPipeline, is, uriHelper, locale, exceptions) {
-        "use strict";
-        var RouteEngine = function(router) {
-            var self, pipeline = new GidgetPipeline(), routes = [], regularExpressions, makeAsyncCallback, makeRouteExecutionQueue, addRoute, cleanseParamNames, parseRoute, parseParams, runAsync;
-            router = router || {};
-            self = {
-                get: router.get,
-                post: router.post,
-                put: router.put,
-                patch: router.patch,
-                del: router.del,
-                navigate: router.navigate,
-                scrollToHash: router.scrollToHash,
-                register: {
-                    get: undefined,
-                    post: undefined,
-                    put: undefined,
-                    patch: undefined,
-                    del: undefined
-                },
-                parseRoute: undefined,
-                resolveRoute: undefined,
-                resolveAndExecuteRoute: undefined,
-                start: router.start,
-                pipeline: pipeline
-            };
-            regularExpressions = {
-                escapeRegExp: /[-[\]{}()+?.,\\^$|#\s]/g,
-                namedParam: /:(\w+)/g,
-                splatParam: /\*(\w+)/g,
-                firstParam: /(:\w+)|(\*\w+)/,
-                allParams: /(:|\*)\w+/g,
-                extractHash: /^[^#]*(#.*)$/
-            };
-            makeAsyncCallback = function(callback) {
-                if (is.function(callback) && callback.length < 3) {
-                    var asyncCallback = function(err, params, next) {
-                        callback(err, params);
-                        next(err, params);
-                    };
-                    asyncCallback.before = makeAsyncCallback(callback.before);
-                    asyncCallback.after = makeAsyncCallback(callback.after);
-                    return asyncCallback;
-                } else {
-                    return callback;
-                }
-            };
-            makeRouteExecutionQueue = function(callback) {
-                return function(err, request) {
-                    var beforeThis, beforeAll, main, afterThis, afterAll;
-                    beforeThis = function() {
-                        if (is.function(callback.before)) {
-                            callback.before(null, request, beforeAll);
-                        } else {
-                            beforeAll(null, request);
-                        }
-                    };
-                    beforeAll = function(err, request) {
-                        pipeline.trigger.before.routeExecution(err, request, main);
-                    };
-                    main = function(err, request) {
-                        callback(err, request, afterThis);
-                    };
-                    afterThis = function(err, request) {
-                        if (is.function(callback.after)) {
-                            callback.after(err, request, afterAll);
-                        } else {
-                            afterAll(err, request);
-                        }
-                    };
-                    afterAll = function(err, request) {
-                        pipeline.trigger.after.routeExecution(err, request);
-                    };
-                    beforeThis();
-                };
-            };
-            addRoute = function(verb, path, callback) {
-                if (is.not.defined(path) || is.not.function(callback)) {
-                    exceptions.throwArgumentException(locale.errors.requiresArguments.replace("{func}", "addRoute").replace("{args}", "(verb, path, callback)"));
-                }
-                routes.push({
-                    route: parseRoute(verb, path),
-                    callback: makeRouteExecutionQueue(makeAsyncCallback(callback))
-                });
-            };
-            cleanseParamNames = function(names) {
-                if (names !== null) {
-                    var paramNames = [], i;
-                    for (i = 0; i < names.length; i += 1) {
-                        paramNames.push(names[i].substr(1));
-                    }
-                    return paramNames;
-                } else {
-                    return [];
-                }
-            };
-            parseRoute = function(verb, path, caseSensitive) {
-                var params, pattern;
-                pattern = String(path);
-                params = cleanseParamNames(pattern.match(regularExpressions.allParams));
-                pattern = pattern.replace(regularExpressions.escapeRegExp, "\\$&");
-                pattern = pattern.replace(regularExpressions.namedParam, "([^/]+)");
-                pattern = pattern.replace(regularExpressions.splatParam, "(.+?)");
-                return new Route({
-                    expressionString: pattern,
-                    paramNames: params,
-                    verb: verb,
-                    source: path
-                }, caseSensitive);
-            };
-            parseParams = function(path, route) {
-                var params = {}, matches, i;
-                matches = path.match(route.expression);
-                if (is.not.array(matches) || matches.length === 1) {
-                    params.splat = [];
-                    return params;
-                }
-                matches.shift();
-                params.splat = matches;
-                for (i = 0; i < route.paramNames.length; i += 1) {
-                    params[route.paramNames[i]] = params.splat[i];
-                }
-                return params;
-            };
-            runAsync = function(handler) {
-                if (is.not.function(handler)) {
-                    exceptions.throwArgumentException(locale.errors.requiresArguments.replace("{func}", "runAsync").replace("{args}", "(handler)"));
-                }
-                setTimeout(handler, 0);
-            };
-            self.register.get = function(path, callback) {
-                return addRoute("get", path, callback);
-            };
-            self.register.post = function(path, callback) {
-                return addRoute("post", path, callback);
-            };
-            self.register.put = function(path, callback) {
-                return addRoute("put", path, callback);
-            };
-            self.register.patch = function(path, callback) {
-                return addRoute("patch", path, callback);
-            };
-            self.register.del = function(path, callback) {
-                return addRoute("del", path, callback);
-            };
-            self.resolveRoute = function(path, verb, payload) {
-                var uri = uriHelper.parseUri(path), makeRequest, i;
-                makeRequest = function(uri, matchingRoute) {
-                    return new GidgetRequest({
-                        route: matchingRoute.route,
-                        params: parseParams(uri.path, matchingRoute.route),
-                        uri: uri,
-                        callback: matchingRoute.callback,
-                        payload: payload
-                    });
-                };
-                for (i = 0; i < routes.length; i += 1) {
-                    if (routes[i].route.expression.test(uri.path)) {
-                        if (!verb) {
-                            return makeRequest(uri, routes[i]);
-                        } else if (routes[i].route.verb === verb) {
-                            return makeRequest(uri, routes[i]);
-                        }
-                    }
-                }
-                return false;
-            };
-            self.resolveAndExecuteRoute = function(path, verb, callback, payload) {
-                var uri = uriHelper.parseUri(path), beforeThis, main, afterThis, request;
-                beforeThis = function() {
-                    pipeline.trigger.before.routeResolution(new GidgetRequest({
-                        uri: uri
-                    }), main);
-                };
-                main = function(err, req) {
-                    if (err) {
-                        pipeline.trigger.on.error(err);
-                        return;
-                    }
-                    request = self.resolveRoute(req.uri, verb, payload);
-                    if (request === false) {
-                        err = {
-                            status: 404,
-                            message: locale.errors.status404,
-                            uri: uri
-                        };
-                        pipeline.trigger.on.error(err);
-                    } else if (is.function(request.callback)) {
-                        afterThis(request);
-                    }
-                };
-                afterThis = function(request) {
-                    pipeline.trigger.after.routeResolution(null, request, request.callback);
-                    if (is.function(callback)) {
-                        callback(null, request, payload);
-                    }
-                };
-                beforeThis();
-            };
-            self.get = function(path, callback) {
-                runAsync(function() {
-                    self.resolveAndExecuteRoute(path, "get", callback);
-                });
-            };
-            self.post = function(path, payload, callback) {
-                runAsync(function() {
-                    self.resolveAndExecuteRoute(path, "post", callback, payload);
-                });
-            };
-            self.put = function(path, payload, callback) {
-                runAsync(function() {
-                    self.resolveAndExecuteRoute(path, "put", callback, payload);
-                });
-            };
-            self.patch = function(path, payload, callback) {
-                runAsync(function() {
-                    self.resolveAndExecuteRoute(path, "patch", callback, payload);
-                });
-            };
-            self.del = function(path, callback) {
-                runAsync(function() {
-                    self.resolveAndExecuteRoute(path, "del", callback);
-                });
-            };
-            return self;
-        };
-        return RouteEngine;
-    }
-});
-
-(function(Hilary, history) {
-    "use strict";
-    Hilary.scope("gidget").register({
-        name: "DefaultRouteEngine",
-        dependencies: [ "BaseRouteEngine", "is", "uriHelper", "exceptions", "locale" ],
-        factory: function(RouteEngine, is, uriHelper, exceptions, locale) {
-            var start, onLoad, addEventListeners, clickHandler, popstateHandler, routeEngine, originalTitle, sessionHistory, maxHistorySize = 20, capHistory, updateHistory, replaceHistory, findHistoryIndex, enumerateHistoryIndex, migrateHistory, updateHistoryByIndex, go, navigate, makeNonce;
-            (function() {
-                var makeHistory;
-                sessionHistory = {
-                    back: {},
-                    forward: {}
-                };
-                makeHistory = function(name, historyType) {
-                    historyType.getHistory = function() {
-                        var item = sessionStorage.getItem(name);
-                        if (item) {
-                            return JSON.parse(item);
-                        }
-                        return [];
-                    };
-                    historyType.setHistory = function(value) {
-                        sessionStorage.setItem(name, JSON.stringify(value));
-                    };
-                    historyType.getLength = function() {
-                        return historyType.getHistory().length;
-                    };
-                    historyType.removeLastElement = function() {
-                        var history = historyType.getHistory(), popped = history.pop();
-                        historyType.setHistory(history);
-                        return popped;
-                    };
-                    historyType.removeFirstElement = function() {
-                        var history = historyType.getHistory(), shifted = history.shift();
-                        historyType.setHistory(history);
-                        return shifted;
-                    };
-                    historyType.addAtBeginning = function(value) {
-                        var history = historyType.getHistory();
-                        history.unshift(value);
-                        historyType.setHistory(history);
-                        return history.length;
-                    };
-                };
-                makeHistory("gidget::history::back", sessionHistory.back);
-                makeHistory("gidget::history::forward", sessionHistory.forward);
-            })();
-            (function() {
-                start = function() {
-                    addEventListeners();
-                    onLoad();
-                };
-                onLoad = function() {
-                    routeEngine.navigate(location.href);
-                };
-                clickHandler = function(event) {
-                    var anchor;
-                    if (event.target.localName === "a") {
-                        anchor = event.target;
-                    } else if (event.currentTarget.activeElement.localName === "a") {
-                        anchor = event.currentTarget.activeElement;
-                    } else {
-                        return;
-                    }
-                    if (anchor.target.length !== 0 && anchor.target !== "_self") {
-                        return;
-                    }
-                    if (anchor.href.length < 1) {
-                        return;
-                    }
-                    if (anchor.href.indexOf("javascript:") > -1 && anchor.href.indexOf("void(") > -1) {
-                        return;
-                    }
-                    event.preventDefault();
-                    routeEngine.navigate(anchor.href);
-                };
-                popstateHandler = function(event) {
-                    var index;
-                    if (is.string(event.state)) {
-                        event.preventDefault();
-                        routeEngine.navigate(event.state, null, false);
-                    } else if (is.object(event.state) && is.object(event.state.uri) && is.defined(event.state.uri.path)) {
-                        event.preventDefault();
-                        routeEngine.navigate(null, event.state, false);
-                        index = findHistoryIndex(event.state);
-                        if (index) {
-                            updateHistoryByIndex(index, false);
-                        }
-                    }
-                };
-                addEventListeners = function() {
-                    document.addEventListener("click", clickHandler, false);
-                    window.addEventListener("popstate", popstateHandler, false);
-                };
-                makeNonce = function(templateString) {
-                    templateString = templateString || "xxxxxxxx";
-                    return templateString.replace(/[xy]/g, function(c) {
-                        var r = Math.random() * 16 | 0, v = c === "x" ? r : r & 3 | 8;
-                        return v.toString(16);
-                    });
-                };
-                capHistory = function() {
-                    if (sessionHistory.back.getLength() > maxHistorySize) {
-                        sessionHistory.back.removeLastElement();
-                    }
-                    if (sessionHistory.forward.getLength() > maxHistorySize) {
-                        sessionHistory.forward.removeLastElement();
-                    }
-                };
-                updateHistory = function(state, title, relativePath) {
-                    history.pushState(state, title, relativePath);
-                    sessionHistory.back.addAtBeginning(state);
-                    capHistory();
-                };
-                replaceHistory = function(state, title, relativePath) {
-                    history.replaceState(state, title, relativePath);
-                    sessionHistory.back.removeFirstElement();
-                    sessionHistory.back.addAtBeginning(state);
-                };
-                findHistoryIndex = function(state) {
-                    var index;
-                    if (!state.nonce) {
-                        return;
-                    }
-                    index = enumerateHistoryIndex(sessionHistory.back.getHistory(), state.nonce);
-                    if (index >= 0) {
-                        return -index;
-                    }
-                    index = enumerateHistoryIndex(sessionHistory.forward.getHistory(), state.nonce);
-                    if (index >= 0) {
-                        return index;
-                    }
-                };
-                enumerateHistoryIndex = function(history, nonce) {
-                    var i;
-                    for (i = 0; i < history.length; i += 1) {
-                        if (history[i].nonce === nonce) {
-                            return i;
-                        }
-                    }
-                };
-                migrateHistory = function(from, to, count) {
-                    var i;
-                    for (i = 0; i < count; i += 1) {
-                        to.addAtBeginning(from.removeFirstElement());
-                    }
-                };
-                updateHistoryByIndex = function(index, removeFirstBackItem) {
-                    var state;
-                    if (is.not.number(index)) {
-                        exceptions.throwArgumentException(new Error(locale.errors.requiresArguments.replace("{func}", "go").replace("{args}", "(index)")));
-                        return;
-                    } else if (index > maxHistorySize || index < -maxHistorySize) {
-                        exceptions.throwArgumentException(new Error(locale.errors.maxHistorySizeExceededOnGoRequest));
-                    }
-                    if (index > 0 && sessionHistory.forward.getLength() >= index) {
-                        state = sessionHistory.forward.getHistory()[index - 1];
-                        migrateHistory(sessionHistory.forward, sessionHistory.back, index);
-                    } else if (index < 0 && sessionHistory.back.getLength() >= -index) {
-                        state = sessionHistory.back.getHistory()[-index];
-                        migrateHistory(sessionHistory.back, sessionHistory.forward, -index);
-                    } else {
-                        exceptions.throwArgumentException(new Error(locale.errors.insufficientHistoryOnGoRequest));
-                        return;
-                    }
-                    if (removeFirstBackItem !== false) {
-                        sessionHistory.back.removeFirstElement();
-                    }
-                    return state;
-                };
-                go = function(index) {
-                    var state = updateHistoryByIndex(index);
-                    if (state) {
-                        navigate(state, {
-                            pushStateToHistory: true,
-                            callback: function() {
-                                capHistory();
-                            }
-                        });
-                    }
-                };
-                navigate = function(state, options) {
-                    options = options || {};
-                    routeEngine.get(state.uri, function(err, req) {
-                        var title = req.title || state.title || "home";
-                        state.title = title;
-                        if (options.pushStateToHistory) {
-                            updateHistory(state, title, state.uri.relativePath);
-                            document.title = title;
-                        } else {
-                            document.title = title;
-                        }
-                        if (is.function(options.callback)) {
-                            options.callback(req);
-                        }
-                    });
-                };
-            })();
-            (function() {
-                var makeOptions, makeState;
-                makeOptions = function(pathOrOptions, data, pushStateToHistory) {
-                    var options = {};
-                    if (is.string(pathOrOptions)) {
-                        options.path = pathOrOptions;
-                        options.data = data;
-                        options.pushStateToHistory = pushStateToHistory;
-                    } else {
-                        options = pathOrOptions || options;
-                        options.data = options.data || data;
-                        options.pushStateToHistory = is.defined(options.pushStateToHistory) ? options.pushStateToHistory : pushStateToHistory;
-                    }
-                    options.pushStateToHistory = options.pushStateToHistory || is.not.defined(options.pushStateToHistory);
-                    return options;
-                };
-                makeState = function(path, data) {
-                    var state = data || {}, pathIsLocal;
-                    state.uri = state.uri || uriHelper.parseUri(path);
-                    originalTitle = originalTitle || document.title;
-                    state.title = state.title || originalTitle;
-                    state.nonce = state.nonce || makeNonce();
-                    pathIsLocal = !state.uri.host || state.uri.host === document.location.host;
-                    if (!pathIsLocal) {
-                        state.redirect = true;
-                    }
-                    return state;
-                };
-                routeEngine = new RouteEngine({
-                    start: start
-                });
-                routeEngine.navigate = function(pathOrOptions, data, pushStateToHistory) {
-                    var options = makeOptions(pathOrOptions, data, pushStateToHistory), state = makeState(options.path, options.data);
-                    if (state.redirect) {
-                        window.location = options.path;
-                        return;
-                    }
-                    navigate(state, options);
-                };
-                routeEngine.redirect = routeEngine.navigate;
-                routeEngine.updateHistory = function(path, data) {
-                    var state = makeState(path, data), title = state.title || "home";
-                    state.title = title;
-                    replaceHistory(state, title, state.uri.relativePath);
-                    document.title = title;
-                };
-                routeEngine.getLastRoute = function() {
-                    return sessionHistory.back.getHistory()[0];
-                };
-                routeEngine.getHistory = function() {
-                    return sessionHistory.back.getHistory();
-                };
-                routeEngine.getFuture = function() {
-                    return sessionHistory.forward.getHistory();
-                };
-                routeEngine.back = function(index) {
-                    if (is.number(index)) {
-                        go(-index);
-                    } else {
-                        go(-1);
-                    }
-                };
-                routeEngine.backToTheFuture = function(options) {
-                    var state, currentUri = uriHelper.parseUri(window.location.href), hist, i;
-                    if (sessionHistory.back.getLength() < 2) {
-                        return false;
-                    }
-                    state = sessionHistory.back.getHistory()[1];
-                    if (state.uri.path !== currentUri.path) {
-                        navigate(state, makeOptions(options));
-                        return true;
-                    }
-                    hist = routeEngine.getHistory();
-                    for (i = 0; i < hist.length; i += 1) {
-                        if (hist[i].uri.path !== currentUri.path) {
-                            navigate(hist[i], makeOptions(options));
-                            return true;
-                        }
-                    }
-                };
-                routeEngine.forward = function(index) {
-                    go(index || 1);
-                };
-                routeEngine.go = function(index) {
-                    go(index);
-                };
-                routeEngine.dispose = function() {
-                    document.removeEventListener("click", clickHandler, false);
-                    window.removeEventListener("popstate", popstateHandler, false);
-                };
-            })();
-            return routeEngine;
-        }
-    });
-})(Hilary, window.history);
-
-Hilary.scope("gidget").register({
-    name: "DefaultGidgetBootstrapper",
-    dependencies: [ "is" ],
-    factory: function(is) {
-        "use strict";
-        var Bootstrapper = function(scope, bootstrapper) {
-            var start, composeLifecycle, composeModules, composeRoutes, onComposed, onError;
-            scope = scope || new Hilary();
-            bootstrapper = bootstrapper || {};
-            bootstrapper.options = bootstrapper.options || {};
-            bootstrapper.hilary = bootstrapper.hilary || {};
-            onError = function(err) {
-                console.log(err);
-            };
-            start = function() {
-                if (is.function(bootstrapper.start)) {
-                    bootstrapper.start(null, composeLifecycle);
-                } else {
-                    composeLifecycle(null, new Gidget(bootstrapper.options));
-                }
-            };
-            composeLifecycle = function(err, gidgetApp) {
-                if (err) {
-                    onError(err);
-                }
-                if (is.function(bootstrapper.composeLifecycle) && bootstrapper.composeLifecycle.length === 4) {
-                    bootstrapper.composeLifecycle(err, gidgetApp, gidgetApp.pipeline, composeModules);
-                } else if (is.function(bootstrapper.composeLifecycle)) {
-                    bootstrapper.composeLifecycle(err, gidgetApp, gidgetApp.pipeline);
-                    composeModules(err, gidgetApp);
-                } else {
-                    composeModules(err, gidgetApp);
-                }
-            };
-            composeModules = function(err, gidgetApp) {
-                if (err) {
-                    onError(err);
-                }
-                scope.register({
-                    name: "gidgetApp",
-                    factory: function() {
-                        return gidgetApp;
-                    }
-                });
-                scope.register({
-                    name: "gidgetRouter",
-                    factory: function() {
-                        return gidgetApp.routeEngine;
-                    }
-                });
-                scope.register({
-                    name: "application",
-                    factory: function() {
-                        return {
-                            restart: function() {
-                                start();
-                            }
-                        };
-                    }
-                });
-                if (is.function(bootstrapper.composeModules) && bootstrapper.composeModules.length === 3) {
-                    bootstrapper.composeModules(err, gidgetApp, composeRoutes);
-                } else if (is.function(bootstrapper.composeModules)) {
-                    bootstrapper.composeModules(err, gidgetApp);
-                    composeRoutes(err, gidgetApp);
-                } else {
-                    composeRoutes(err, gidgetApp);
-                }
-            };
-            composeRoutes = function(err, gidgetApp) {
-                if (err) {
-                    onError(err);
-                }
-                if (is.function(bootstrapper.composeRoutes) && bootstrapper.composeRoutes.length === 3) {
-                    bootstrapper.composeRoutes(err, gidgetApp, onComposed);
-                } else if (is.function(bootstrapper.composeRoutes)) {
-                    bootstrapper.composeRoutes(err, gidgetApp);
-                    onComposed(err, gidgetApp);
-                } else {
-                    onComposed(err, gidgetApp);
-                }
-            };
-            onComposed = function(err, gidgetApp) {
-                var startRouteEngine;
-                if (err) {
-                    onError(scope, err);
-                }
-                startRouteEngine = function() {
-                    gidgetApp.routeEngine.start();
-                };
-                if (is.function(bootstrapper.onComposed) && bootstrapper.onComposed.length === 3) {
-                    bootstrapper.onComposed(err, gidgetApp, startRouteEngine);
-                } else if (is.function(bootstrapper.onComposed)) {
-                    bootstrapper.onComposed(err, gidgetApp);
-                    startRouteEngine();
-                } else {
-                    startRouteEngine();
-                }
-            };
-            if (bootstrapper.options.composeHilary !== false) {
-                scope.Bootstrapper({
-                    composeLifecycle: bootstrapper.hilary.composeLifecycle,
-                    composeModules: bootstrapper.hilary.composeModules,
-                    onComposed: function(err, scope) {
-                        if (is.function(bootstrapper.hilary.onComposed)) {
-                            bootstrapper.hilary.onComposed(err, scope);
-                        }
-                        start();
-                    }
-                });
-            } else {
-                start();
-            }
-        };
-        return Bootstrapper;
     }
 });
 
