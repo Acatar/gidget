@@ -7,13 +7,34 @@ Hilary.scope('gidget').register({
         'use strict';
 
         var self = {
-            parseUri: undefined
-        },
-        expressions = /^(?:(?![^:@]+:[^:@\/]*@)(http|https|ws|wss):\/\/)?((?:(([^:@]*)(?::([^:@]*))?)?@)?((?:[a-f0-9]{0,4}:){2,7}[a-f0-9]{0,4}|[^:\/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#\/]*\.[^?#\/.]+(?:[?#]|$)))*\/?)?([^?#\/]*))(?:\?([^#]*))?(?:#(.*))?)/,
-        parts = ['source', 'protocol', 'authority', 'userAndPassword', 'user', 'password', 'hostName', 'port', 'relativePath', 'path', 'directory', 'file', 'queryString', 'hash'],
-        queryPart = {
-            name:   'query',
-            parser: /(?:^|&)([^&=]*)=?([^&]*)/g
+                parseUri: undefined
+            },
+            expressions = /^(?:(?![^:@]+:[^:@\/]*@)(http|https|ws|wss):\/\/)?((?:(([^:@]*)(?::([^:@]*))?)?@)?((?:[a-f0-9]{0,4}:){2,7}[a-f0-9]{0,4}|[^:\/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#\/]*\.[^?#\/.]+(?:[?#]|$)))*\/?)?([^?#\/]*))(?:\?([^#]*))?(?:#(.*))?)/,
+            parts = ['source', 'protocol', 'authority', 'userAndPassword', 'user', 'password', 'hostName', 'port', 'relativePath', 'path', 'directory', 'file', 'queryString', 'hash'],
+            queryPart = {
+                name:   'query',
+                parser: /(?:^|&)([^&=]*)=?([^&]*)/g
+            },
+            makeHost,
+            makeOrigin;
+
+        makeHost = function (hostName, port) {
+            if (!port) {
+                return hostName;
+            }
+
+            return '{{host}}:{{port}}'
+                .replace(/{{host}}/, hostName)
+                .replace(/{{port}}/, port);
+        };
+
+        makeOrigin = function (protocol, authority, userAndPassword) {
+            return'{{protocol}}://{{host}}'
+                    .replace(/{{protocol}}/, protocol)
+                    .replace(/{{host}}/, authority
+                                            .replace(userAndPassword, '')
+                                            .replace('@', '')
+                    );
         };
 
         self.parseUri = function (uriString) {
@@ -60,12 +81,10 @@ Hilary.scope('gidget').register({
                 });
             }
 
-            uri.host = (uri.hostName && uri.port) ? uri.hostName.concat(':', uri.port) : uri.hostName;
+            uri.host = makeHost(uri.hostName, uri.port);
 
-            if (uri.authority && uri.protocol) {
-                uri.origin = uri.protocol.concat('://', uri.authority.replace(uri.userAndPassword, '').replace('@', ''));
-            } else if (uri.authority) {
-                uri.origin = 'https://'.concat(uri.authority.replace(uri.userAndPassword, '').replace('@', ''));
+            if (uri.authority) {
+                uri.origin = makeOrigin(uri.protocol || 'https', uri.authority, uri.userAndPassword);
             }
 
             return uri;
