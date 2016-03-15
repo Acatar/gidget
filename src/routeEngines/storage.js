@@ -6,7 +6,14 @@ Hilary.scope('gidget').register({
 
         if (window.sessionStorage && window.sessionStorage.setItem && window.sessionStorage.getItem) {
             // sessionStorage is supported, prefer that
-            return window.sessionStorage;
+            try {
+                window.sessionStorage.setItem('stor-test', 'hello world!');
+                window.sessionStorage.removeItem('stor-test');
+
+                return window.sessionStorage;
+            } catch (e) {
+                // ignore
+            }
         }
 
         // sessionStorage is not supported, use volatile storage

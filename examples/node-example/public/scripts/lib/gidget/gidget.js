@@ -646,7 +646,11 @@ Hilary.scope("gidget").register({
     factory: function() {
         "use strict";
         if (window.sessionStorage && window.sessionStorage.setItem && window.sessionStorage.getItem) {
-            return window.sessionStorage;
+            try {
+                window.sessionStorage.setItem("stor-test", "hello world!");
+                window.sessionStorage.removeItem("stor-test");
+                return window.sessionStorage;
+            } catch (e) {}
         }
         var self = {
             setItem: undefined,
